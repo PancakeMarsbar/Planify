@@ -19,6 +19,8 @@ namespace Planify.Pages
             var repo = new AppRepository();
             _vm = new V2.BoardViewModel(repo);
 
+            _vm.Alert = async (title, msg) => await DisplayAlert(title, msg, "OK");
+
             var lanesHost = new HorizontalStackLayout { Spacing = 12, Padding = 12 };
             Content = new ScrollView { Content = lanesHost };
 
@@ -92,6 +94,10 @@ namespace Planify.Pages
                                     var index = _vm.Lanes.OrderBy(l => l.Order).ToList().FindIndex(l => l.Id == lane.Id);
                                     if (index >= 0) await sv.ScrollToAsync(index * 300, 0, true);
                                 }
+                            }
+                            else
+                            {
+                                await DisplayAlert("Nyt kort", "Value not aceppeted","OK");
                             }
                             break;
                         }

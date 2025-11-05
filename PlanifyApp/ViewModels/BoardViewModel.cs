@@ -12,6 +12,8 @@ namespace Planify.ViewModels.V2
     public sealed class BoardViewModel
     {
         private readonly AppRepository _repo;
+        private System.Timers.Timer? _timer;
+        private bool _refreshing;
 
         public ObservableCollection<BoardLane> Lanes { get; } = new();
         public Dictionary<string, ObservableCollection<Card>> CardsByLane { get; } = new();
