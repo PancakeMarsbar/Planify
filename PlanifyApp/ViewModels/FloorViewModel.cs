@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,8 +11,13 @@ namespace Planify.ViewModels
     {
         private readonly AppRepository _repo;
 
+        public ObservableCollection<FloorPlan> Floors { get; } = new();
+        public ObservableCollection<Table> Tables { get; } = new();
         public ObservableCollection<Seat> Seats { get; } = new();
-        public Floor? CurrentFloor { get; private set; }
+
+        public FloorPlan? CurrentFloor { get; private set; }
+        public string CurrentFloorName => CurrentFloor?.Name ?? "";
+        public string? CurrentImagePath => CurrentFloor?.ImagePath;
         public int CurrentLevel => CurrentFloor?.Level ?? 0;
 
         public FloorViewModel(AppRepository repo) => _repo = repo;
@@ -20,42 +26,103 @@ namespace Planify.ViewModels
         {
             await _repo.LoadAsync();
 
-            // sikr mindst én floor
-            if (_repo.Floors == null || _repo.Floors.Count == 0)
-            {
-                _repo.Floors = new System.Collections.Generic.List<Floor>
-                {
-                    new Floor
-                    {
-                        Company="Company1", Building="A", Level=0,
-                        Tables =
-                        {
-                            new Table
-                            {
-                                Id="T-01", X=50, Y=60, Width=300, Height=160,
-                                Seats =
-                                {
-                                    new Seat{ Id="S-01", X=60,  Y=80,  LocaterId="0.3.5", Role="Cutter" },
-                                    new Seat{ Id="S-02", X=220, Y=80,  LocaterId="0.2.1", Role="Producer" }
-                                }
-                            }
-                        }
-                    }
-                };
-                await _repo.SaveAsync();
-            }
+            Floors.Clear();
+            foreach (var f in _repo.Floors)
+                Floors.Add(f);
 
-            CurrentFloor = _repo.Floors.FirstOrDefault();
+            CurrentFloor = Floors.FirstOrDefault();
+            RebuildFromCurrent();
+        }
+
+        private void RebuildFromCurrent()
+        {
+            Tables.Clear();
             Seats.Clear();
+
             if (CurrentFloor != null)
             {
-                foreach (var s in CurrentFloor.Tables.SelectMany(t => t.Seats))
-                    Seats.Add(s);
+                foreach (var t in CurrentFloor.Tables)
+                {
+                    Tables.Add(t);
+                    foreach (var s in t.Seats)
+                        Seats.Add(s);
+                }
             }
 
+            Raise(nameof(Tables));
             Raise(nameof(Seats));
             Raise(nameof(CurrentFloor));
+            Raise(nameof(CurrentFloorName));
+            Raise(nameof(CurrentImagePath));
             Raise(nameof(CurrentLevel));
+        }
+
+        public void SelectFloor(FloorPlan floor)
+        {
+            if (floor == null || floor == CurrentFloor)
+                return;
+
+            CurrentFloor = floor;
+            RebuildFromCurrent();
+        }
+
+        public async Task<FloorPlan> AddFloor(string name)
+        {
+            var f = new FloorPlan
+            {
+                Name = name,
+                Company = "Company",
+                Building = "",
+                Level = Floors.Count
+            };
+
+            _repo.Floors.Add(f);
+            Floors.Add(f);
+            CurrentFloor = f;
+            RebuildFromCurrent();
+            await _repo.SaveAsync();
+            return f;
+        }
+
+        public async Task SetImageForCurrent(string path)
+        {
+            if (CurrentFloor == null) return;
+
+            CurrentFloor.ImagePath = path;
+            await _repo.SaveAsync();
+            Raise(nameof(CurrentImagePath));
+        }
+
+        public async Task<Table> AddTable()
+        {
+            if (CurrentFloor == null)
+                throw new InvalidOperationException("Ingen etage valgt");
+
+            var t = new Table
+            {
+                Id = $"T-{CurrentFloor.Tables.Count + 1:00}",
+
+                // RELATIVE positioner (0-1)
+                X = 0.1,
+                Y = 0.1,
+
+                // faste størrelser (kan du justere senere)
+                Width = 260,
+                Height = 140
+            };
+
+            CurrentFloor.Tables.Add(t);
+            Tables.Add(t);
+            await _repo.SaveAsync();
+            return t;
+        }
+
+        // x / y er nu relative koordinater (0-1)
+        public async Task UpdateTablePosition(Table t, double relativeX, double relativeY)
+        {
+            t.X = relativeX;
+            t.Y = relativeY;
+            await _repo.SaveAsync();
         }
 
         public System.Collections.Generic.IEnumerable<Card> CardsForSeat(Seat s)
