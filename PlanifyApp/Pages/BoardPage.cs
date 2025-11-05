@@ -19,7 +19,7 @@ namespace Planify.Pages
             var repo = new AppRepository();
             _vm = new V2.BoardViewModel(repo);
 
-            _vm.Alert = async (title, msg) => await DisplayAlert(title, msg, "OK");
+            //_vm.Alert = async (title, msg) => await DisplayAlert(title, msg, "OK");
 
             var lanesHost = new HorizontalStackLayout { Spacing = 12, Padding = 12 };
             Content = new ScrollView { Content = lanesHost };
