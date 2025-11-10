@@ -20,7 +20,6 @@ namespace Planify
 
             builder.UseMauiApp<App>();
 
-            builder.Services.AddSingleton<IUserState, UserState>();
 #if DEBUG
             b.Logging.AddDebug();
 #endif

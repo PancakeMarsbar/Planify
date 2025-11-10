@@ -7,7 +7,6 @@ namespace Planify
     {
         private int _count;
         private readonly Button _counterBtn;
-        private readonly IUserState _userState;
         public MainPage()
         {
             Title = "Home";
