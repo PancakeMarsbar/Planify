@@ -1,6 +1,7 @@
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
+using Planify.Pages;
 
 namespace Planify
 {
@@ -30,6 +31,15 @@ namespace Planify
         }
 
         protected override Window CreateWindow(IActivationState? activationState)
-            => new Window(new AppShell());
+        {
+            bool startLoggedIn = false; // change to true later if needed and whant auto log in
+
+            if (startLoggedIn)
+            {
+                return new Window(new AppShell());    // Shell-based app
+            } else {
+                return new Window(new LoginPage());   // ContentPage login
+            }
+        }
     }
 }

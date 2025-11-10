@@ -24,7 +24,7 @@ namespace Planify.Pages
         {
             Title = "Floors";
 
-            var repo = new AppRepository();
+            var repo = AppRepository.Instance;
             _vm = new FloorViewModel(repo);
 
             // --- topbar ---

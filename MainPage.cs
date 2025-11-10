@@ -1,4 +1,5 @@
 using Microsoft.Maui.Controls;
+using Planify.Services;
 
 namespace Planify
 {
@@ -6,10 +7,12 @@ namespace Planify
     {
         private int _count;
         private readonly Button _counterBtn;
-
+        private readonly IUserState _userState;
         public MainPage()
         {
             Title = "Home";
+
+            
 
             var image = new Image
             {

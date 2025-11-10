@@ -3,12 +3,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Serialization;
 using Planify.Models;
+using Planify.Services;
+using System.Diagnostics;
 
 namespace Planify.Services
 {
     public sealed class AppRepository
     {
+
+        private static readonly Lazy<AppRepository> _instance = new(() => new AppRepository());
+        public static AppRepository Instance => _instance.Value;
+
+        private AppRepository() { } // private constructor
         public List<Card> Cards { get; private set; } = new();
 
         // Floors er en liste af FloorPlan (vores nye model)
@@ -16,12 +24,16 @@ namespace Planify.Services
 
         public List<BoardLane> Lanes { get; private set; } = new();
 
+        public List<UserAccount> Users { get; private set; } = new();
+
+
         private readonly JsonStore _store = new();
         private readonly AuditLog _audit = new();
         private readonly FileMutex _mutex = new("repo");
 
-        public string CurrentUser { get; set; } = "David";
-        public bool IsAdmin { get; set; } = true;
+        public string CurrentUser { get; set; } = "Not loged in there is an ERROR";
+        public bool IsAdmin { get; set; } = false;
+        public bool IsLogedIn { get; set; } = false;
 
         // ---------- Load / Save ----------
         public async Task LoadAsync()
@@ -35,6 +47,7 @@ namespace Planify.Services
                         Cards = await _store.LoadAsync<List<Card>>("cards") ?? new List<Card>();
                         Floors = await _store.LoadAsync<List<FloorPlan>>("floors") ?? SeedFloors();
                         Lanes = await _store.LoadAsync<List<BoardLane>>("lanes") ?? SeedLanes();
+                        Users = await _store.LoadAsync<List<UserAccount>>("users") ?? SeedBaseUsers();
 
                         // Sørg for at alle kort har en lane
                         var firstLaneId = Lanes.OrderBy(l => l.Order).First().Id;
@@ -69,6 +82,7 @@ namespace Planify.Services
                         await _store.SaveAsync("cards", Cards);
                         await _store.SaveAsync("floors", Floors);
                         await _store.SaveAsync("lanes", Lanes);
+                        await _store.SaveAsync("users", Users);
                     }
                     finally
                     {
@@ -84,6 +98,66 @@ namespace Planify.Services
 
         public void Log(string action, string details)
             => _audit.Write(CurrentUser, action, details);
+
+
+        // --------- Account Logic -------------
+        public UserAccount? GetUser(string username) => Users.FirstOrDefault(u => u.Username == username);
+
+        public void AddUser(UserAccount user)
+        {
+            if (!Users.Any(u => u.Username == user.Username))
+                Users.Add(user);
+        }
+
+        public void UpdateUser(UserAccount user)
+        {
+            var existing = GetUser(user.Username);
+            if (existing != null)
+            {
+                existing.IsAdmin = user.IsAdmin;
+                existing.Metadata = user.Metadata;
+                existing.Password = user.Password;
+            }
+        }
+
+        public void RemoveUser (string username)
+        {
+            if (Users.Remove(GetUser(username)))
+            {
+                Debug.WriteLine("unable to remove " + username);
+            }
+        }
+
+
+        // --------- Login Credentials -----------
+        public async Task<bool> LoginAsync(string username, string password)
+        {
+            var users = await _store.LoadAsync<List<UserAccount>>("users") ?? new List<UserAccount>();
+
+            var user = users.FirstOrDefault(u =>
+                string.Equals(u.Username, username, StringComparison.OrdinalIgnoreCase) &&
+                u.Password == password);
+
+            if (user != null)
+            {
+                CurrentUser = user.Username;
+                IsAdmin = user.IsAdmin;
+                return true;
+            }
+
+            return false;
+        }
+
+        public void Logout()
+        {
+                CurrentUser = "Not loged in there is an ERROR";
+                IsAdmin = false;
+                return;
+        }
+
+
+
+
 
         // ---------- Lanes ----------
         public BoardLane AddLane(string title)
@@ -302,6 +376,26 @@ namespace Planify.Services
 
             f.Tables.Add(t);
             return new List<FloorPlan> { f };
+        }
+
+
+
+        private List<UserAccount> SeedBaseUsers()
+        {
+            var users = new List<UserAccount>
+            {
+                new UserAccount
+                {
+                    Username = "admin",
+                    Password = "admin123",  // TODO: hash later
+                    IsAdmin = true,
+                    Metadata = new Dictionary<string, object>
+                    {
+                        { "CreatedAt", DateTime.UtcNow }
+                    }
+                }
+            };
+            return users;
         }
     }
 }

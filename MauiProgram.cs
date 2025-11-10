@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Planify.Services;
 
 namespace Planify
 {
@@ -14,6 +15,12 @@ namespace Planify
                  f.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
              });
 
+
+            var builder = MauiApp.CreateBuilder();
+
+            builder.UseMauiApp<App>();
+
+            builder.Services.AddSingleton<IUserState, UserState>();
 #if DEBUG
             b.Logging.AddDebug();
 #endif

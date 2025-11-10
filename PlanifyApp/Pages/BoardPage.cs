@@ -16,7 +16,7 @@ namespace Planify.Pages
         {
             Title = "Board";
 
-            var repo = new AppRepository();
+            var repo = AppRepository.Instance;
             _vm = new V2.BoardViewModel(repo);
 
             //_vm.Alert = async (title, msg) => await DisplayAlert(title, msg, "OK");

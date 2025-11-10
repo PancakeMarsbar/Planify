@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Planify.Services;
 
 namespace Planify.Pages;
 
@@ -113,9 +114,8 @@ public class ClaimsView : ContentPage
 
 		IdTokensClaims = new[]
 		{
-			"user; admin",
-			"role: localtester",
-			"environment: offline"
+			"user; " + AppRepository.Instance.CurrentUser,
+			"role; " + ((AppRepository.Instance.IsAdmin) ? "admin" : "User")
 		};
 
 		_claimsList.ItemsSource = IdTokensClaims;
@@ -126,7 +126,8 @@ public class ClaimsView : ContentPage
 	private async void SignOutButton_Clicked(object sender, EventArgs e)
     {
 		// Replace whit your own local sign-out or state clear logic
-		await Task.Delay(100);
-		await Shell.Current.GoToAsync("//LoginPage");
+		AppRepository.Instance.Logout();
+        Application.Current.MainPage = new LoginPage();
+        //await Shell.Current.GoToAsync("//LoginPage");
     }
 }
