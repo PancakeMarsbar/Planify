@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Planify.Services;
+using CommunityToolkit.Maui;
 
 namespace Planify
 {
@@ -8,7 +9,7 @@ namespace Planify
         public static MauiApp CreateMauiApp()
         {
             var b = MauiApp.CreateBuilder();
-            b.UseMauiApp<App>()
+            b.UseMauiApp<App>().UseMauiCommunityToolkit()
              .ConfigureFonts(f =>
              {
                  f.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

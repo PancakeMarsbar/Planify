@@ -18,6 +18,7 @@ namespace Planify
                     new ShellContent{ Title="Floors",       Route="FloorPage",    ContentTemplate=new DataTemplate(()=> new FloorPage()) },
                     new ShellContent{ Title="Settings",     Route="SettingsPage", ContentTemplate=new DataTemplate(()=> new SettingsPage()) },
                     new ShellContent{ Title="ClaimsView",   Route="ClaimsView",   ContentTemplate=new DataTemplate(()=> new ClaimsView()) },
+                    new ShellContent{ Title="Accounts",     Route="AccountPage",  ContentTemplate=new DataTemplate(()=> new AccountsPage())},
                 }
             });
         }

@@ -57,6 +57,7 @@ namespace Planify.Services
                     finally
                     {
                         _mutex.Unlock();
+
                     }
                 }
 
@@ -68,6 +69,7 @@ namespace Planify.Services
                 if (Lanes.Count == 0) Lanes = SeedLanes();
                 if (Floors.Count == 0) Floors = SeedFloors();
                 if (Cards.Count == 0) Cards = SeedCards(Lanes);
+                if (Users.Count == 0) Users = SeedBaseUsers();
             }
         }
 
@@ -103,7 +105,7 @@ namespace Planify.Services
         // --------- Account Logic -------------
         public UserAccount? GetUser(string username) => Users.FirstOrDefault(u => u.Username == username);
 
-        public void AddUser(UserAccount user)
+        public void CreateUser(UserAccount user)
         {
             if (!Users.Any(u => u.Username == user.Username))
                 Users.Add(user);
@@ -115,8 +117,8 @@ namespace Planify.Services
             if (existing != null)
             {
                 existing.IsAdmin = user.IsAdmin;
-                existing.Metadata = user.Metadata;
                 existing.Password = user.Password;
+                existing.Image = user.Image;
             }
         }
 
@@ -133,6 +135,11 @@ namespace Planify.Services
         public async Task<bool> LoginAsync(string username, string password)
         {
             var users = await _store.LoadAsync<List<UserAccount>>("users") ?? new List<UserAccount>();
+
+            if (users.Count == 0)
+            {
+                users = SeedBaseUsers();
+            }
 
             var user = users.FirstOrDefault(u =>
                 string.Equals(u.Username, username, StringComparison.OrdinalIgnoreCase) &&
@@ -389,10 +396,6 @@ namespace Planify.Services
                     Username = "admin",
                     Password = "admin123",  // TODO: hash later
                     IsAdmin = true,
-                    Metadata = new Dictionary<string, object>
-                    {
-                        { "CreatedAt", DateTime.UtcNow }
-                    }
                 }
             };
             return users;
