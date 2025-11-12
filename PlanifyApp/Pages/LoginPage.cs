@@ -42,57 +42,97 @@ public class LoginPage : ContentPage
         Shell.SetBackButtonBehavior(this,
                 new BackButtonBehavior { IsVisible = false, IsEnabled = false });
 
-        var header1 = new Label
         {
-            Text = "local auth sample",
-            FontSize = 26,
-            HorizontalOptions = LayoutOptions.Center
-        };
+            Title = "Planify";
 
-        var header2 = new Label
-        {
-            Text = "MAUI sample",
-            FontSize = 26,
-            Padding = new Thickness(0, 0, 0, 20),
-            HorizontalOptions = LayoutOptions.Center
-        };
+            var header1 = new Label
+            {
+                Text = "Welcome to Planify",
+                FontSize = 30,
+                FontAttributes = FontAttributes.Bold,
+                HorizontalOptions = LayoutOptions.Center,
+                TextColor = Colors.Black,
+                Margin = new Thickness(0, -50, 0, 0)
+            };
 
-        username = new Entry
-        {
-            ReturnCommand = signInCommand,
-            Placeholder = "Usernames",
-            PlaceholderColor = Color.FromRgba(128, 128, 128, 128),
-            HorizontalOptions = LayoutOptions.Center
-        };
+            var header2 = new Label
+            {
+                Text = "Organize your plans effortlessly",
+                FontSize = 18,
+                HorizontalOptions = LayoutOptions.Center,
+                TextColor = Colors.Gray,
+                Padding = new Thickness(0, 0, 0, 30)
+            };
 
-        password = new Entry
-        {
-            ReturnCommand = signInCommand,
-            Placeholder = "Password",
-            PlaceholderColor = Color.FromRgba(128, 128, 128, 128),
-            HorizontalOptions = LayoutOptions.Center,
-            IsPassword = true
-        };
+            var imagePlaceholder = new Image
+            {
+                Source = "logo2.png", // add this image to your Resources/Images folder
+                WidthRequest = 400,
+                HeightRequest = 400,
+                HorizontalOptions = LayoutOptions.Center,
+                Margin = new Thickness(0, -50, 0, 0),
+                Aspect = Aspect.AspectFit
+            };
 
-        _signInButton = new Button
-        {
-            Text = "Sign In",
-            HorizontalOptions = LayoutOptions.Center,
-            Command = signInCommand
-        };
-        
+            username = new Entry
+            {
+                ReturnCommand = signInCommand,
+                Placeholder = "Username",
+                PlaceholderColor = Colors.Gray,
+                TextColor = Colors.Black,
+                BackgroundColor = Colors.White,
+                WidthRequest = 250,
+                HorizontalOptions = LayoutOptions.Center,
+                Margin = new Thickness(0, 5)
+            };
 
-        // --- Page layout ---
-        Content = new VerticalStackLayout
-        {
-            Children = {
-                header1,
-                header2,
-                username,
-                password,
-                _signInButton
-            }
-        };
+            password = new Entry
+            {
+                ReturnCommand = signInCommand,
+                Placeholder = "Password",
+                PlaceholderColor = Colors.Gray,
+                TextColor = Colors.Black,
+                BackgroundColor = Colors.White,
+                WidthRequest = 250,
+                HorizontalOptions = LayoutOptions.Center,
+                IsPassword = true,
+                Margin = new Thickness(0, 5, 0, 15)
+            };
+
+            _signInButton = new Button
+            {
+                Text = "Sign In",
+                Command = signInCommand,
+                BackgroundColor = Color.FromArgb("#3B82F6"), // blue accent
+                TextColor = Colors.White,
+                CornerRadius = 10,
+                WidthRequest = 250,
+                HeightRequest = 45,
+                HorizontalOptions = LayoutOptions.Center,
+                Margin = new Thickness(0, 10, 0, 30)
+            };
+
+            Content = new ScrollView
+            {
+                Content = new VerticalStackLayout
+                {
+                    Spacing = 0,
+                    Padding = new Thickness(0, 0),
+                    HorizontalOptions = LayoutOptions.Center,
+                    Children =
+                    {
+                        imagePlaceholder,
+                        header1,
+                        header2,
+                        username,
+                        password,
+                        _signInButton
+                    }
+                }
+            };
+
+            BackgroundColor = Color.FromArgb("#F3F4F6");
+        }
 
         // start logic
         // Simulated "fetch user" from cache

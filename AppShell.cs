@@ -10,17 +10,21 @@ namespace Planify
         {
             Title = "Planify";
 
-            Items.Add(new TabBar
+            var tabBar = new TabBar();
+
+            // Common items for all users
+            tabBar.Items.Add(new ShellContent { Title = "Board", Route = "BoardPage", ContentTemplate = new DataTemplate(() => new BoardPage()) });
+            tabBar.Items.Add(new ShellContent { Title = "Floors", Route = "FloorPage", ContentTemplate = new DataTemplate(() => new FloorPage()) });
+            tabBar.Items.Add(new ShellContent { Title = "ClaimsView", Route = "ClaimsView", ContentTemplate = new DataTemplate(() => new ClaimsView()) });
+            tabBar.Items.Add(new ShellContent { Title = "Accounts", Route = "AccountPage", ContentTemplate = new DataTemplate(() => new AccountsPage()) });
+
+            // Admin-only items
+            if (AppRepository.Instance.IsAdmin)
             {
-                Items =
-                {
-                    new ShellContent{ Title="Board",        Route="BoardPage",    ContentTemplate=new DataTemplate(()=> new BoardPage()) },
-                    new ShellContent{ Title="Floors",       Route="FloorPage",    ContentTemplate=new DataTemplate(()=> new FloorPage()) },
-                    new ShellContent{ Title="Settings",     Route="SettingsPage", ContentTemplate=new DataTemplate(()=> new SettingsPage()) },
-                    new ShellContent{ Title="ClaimsView",   Route="ClaimsView",   ContentTemplate=new DataTemplate(()=> new ClaimsView()) },
-                    new ShellContent{ Title="Accounts",     Route="AccountPage",  ContentTemplate=new DataTemplate(()=> new AccountsPage())},
-                }
-            });
+                tabBar.Items.Add(new ShellContent { Title = "Settings", Route = "SettingsPage", ContentTemplate = new DataTemplate(() => new SettingsPage()) });
+            }
+
+            Items.Add(tabBar);
         }
         protected override async void OnNavigating(ShellNavigatingEventArgs args)
         {
