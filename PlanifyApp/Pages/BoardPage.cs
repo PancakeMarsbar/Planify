@@ -19,10 +19,18 @@ namespace Planify.Pages
             var repo = AppRepository.Instance;
             _vm = new V2.BoardViewModel(repo);
 
-            //_vm.Alert = async (title, msg) => await DisplayAlert(title, msg, "OK");
-
             var lanesHost = new HorizontalStackLayout { Spacing = 12, Padding = 12 };
-            Content = new ScrollView { Content = lanesHost };
+
+            // Scrollbars altid synlige
+            var scroller = new ScrollView
+            {
+                Orientation = ScrollOrientation.Both,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Always,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Always,
+                Content = lanesHost
+            };
+
+            Content = scroller;
 
             Appearing += async (_, __) =>
             {
@@ -64,7 +72,7 @@ namespace Planify.Pages
             }
         }
 
-        // === Kolonne-menu (kun ét prompt ved "Tilføj kort") ===
+        // === Kolonne-menu (tilføj/omdøb/fjern kolonner + tilføj kort) ===
         private View LaneMenuButton(BoardLane lane)
         {
             var btn = new Button { Text = "⋯", WidthRequest = 28, HeightRequest = 28, Padding = 0, FontSize = 14 };
@@ -72,7 +80,7 @@ namespace Planify.Pages
             {
                 var options = new System.Collections.Generic.List<string>
                 {
-                    "Tilføj kort",          // <- ét prompt
+                    "Tilføj kort",
                     "Omdøb kolonne",
                     "Tilføj kolonne"
                 };
@@ -88,7 +96,7 @@ namespace Planify.Pages
                             {
                                 await _vm.CreateCard(lane.Id, tag, null, null);
 
-                                // Scroll en smule hen mod kolonnen så brugeren ser kortet
+                                // Scroll lidt hen mod kolonnen så brugeren ser kortet
                                 if (this.Content is ScrollView sv)
                                 {
                                     var index = _vm.Lanes.OrderBy(l => l.Order).ToList().FindIndex(l => l.Id == lane.Id);
@@ -97,7 +105,7 @@ namespace Planify.Pages
                             }
                             else
                             {
-                                await DisplayAlert("Nyt kort", "Value not aceppeted","OK");
+                                await DisplayAlert("Nyt kort", "Value not aceppeted", "OK");
                             }
                             break;
                         }
@@ -149,7 +157,7 @@ namespace Planify.Pages
                 }
             };
 
-            // Venstre pil (←)
+            // ← Venstre pil
             var leftBtn = new Button { Text = "←", WidthRequest = 36, HeightRequest = 36, Padding = 0 };
             leftBtn.Clicked += async (_, __) =>
             {
@@ -172,7 +180,7 @@ namespace Planify.Pages
             deadline.SetBinding(Label.TextProperty, new Binding(nameof(Card.SetupDeadline), stringFormat: "Deadline: {0:yyyy-MM-dd}"));
             var content = new VerticalStackLayout { Spacing = 2, Children = { asset, model, loc, status, deadline } };
 
-            // Højre side
+            // Højre side: badge + → + Flyt + ⋯
             var badge = new BoxView { WidthRequest = 8, HeightRequest = 8, CornerRadius = 4, VerticalOptions = LayoutOptions.Center };
             badge.SetBinding(BoxView.ColorProperty, new MultiBinding
             {
@@ -180,6 +188,7 @@ namespace Planify.Pages
                 Converter = new DeadlineToColor()
             });
 
+            // → Højre pil
             var rightBtn = new Button { Text = "→", WidthRequest = 36, HeightRequest = 36, Padding = 0 };
             rightBtn.Clicked += async (_, __) =>
             {
@@ -189,6 +198,23 @@ namespace Planify.Pages
                 if (idx < lanes.Count - 1) await _vm.Move(c, lanes[idx + 1].Id);
             };
 
+            // NY: Flyt-knap (egen action sheet til flytning)
+            var moveBtn = new Button { Text = "Flyt", HeightRequest = 36, Padding = new Thickness(10, 0) };
+            moveBtn.Clicked += async (_, __) =>
+            {
+                if (border.BindingContext is not Card c) return;
+                var lanes = _vm.Lanes.OrderBy(x => x.Order).ToList();
+                var titles = lanes.Select(l => l.Title + (l.Id == lane.Id ? " ✓" : "")).ToArray();
+
+                var moveChoice = await DisplayActionSheet("Flyt til …", "Luk", null, titles);
+                if (string.IsNullOrWhiteSpace(moveChoice)) return;
+
+                var clean = moveChoice.Replace(" ✓", "");
+                var dest = lanes.FirstOrDefault(l => l.Title == clean);
+                if (dest != null) await _vm.Move(c, dest.Id);
+            };
+
+            // ⋯ Redigeringsmenu (kun redigér/slet – IKKE flyt)
             var menuBtn = new Button { Text = "⋯", WidthRequest = 36, HeightRequest = 36, Padding = 0, FontSize = 18 };
             menuBtn.Clicked += async (_, __) =>
             {
@@ -217,16 +243,10 @@ namespace Planify.Pages
                         await _vm.DeleteCard(c);
                 }
 
-                // Flyt til bestemt kolonne
-                var lanes = _vm.Lanes.OrderBy(x => x.Order).ToList();
-                var titles = lanes.Select(l => l.Title + (l.Id == lane.Id ? " ✓" : "")).ToArray();
-                var moveChoice = await DisplayActionSheet("Flyt til …", "Luk", null, titles);
-                var clean = moveChoice?.Replace(" ✓", "");
-                var dest = lanes.FirstOrDefault(l => l.Title == clean);
-                if (dest != null) await _vm.Move(c, dest.Id);
+                // VIGTIGT: Ingen auto-"Flyt til ..." her længere
             };
 
-            var right = new HorizontalStackLayout { Spacing = 6, Children = { badge, rightBtn, menuBtn } };
+            var right = new HorizontalStackLayout { Spacing = 6, Children = { badge, rightBtn, moveBtn, menuBtn } };
 
             grid.Children.Add(leftBtn); Microsoft.Maui.Controls.Grid.SetColumn(leftBtn, 0);
             grid.Children.Add(content); Microsoft.Maui.Controls.Grid.SetColumn(content, 1);
