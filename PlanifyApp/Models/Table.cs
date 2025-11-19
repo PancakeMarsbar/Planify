@@ -13,9 +13,6 @@ namespace Planify.Models
         public double Width { get; set; } = 260;
         public double Height { get; set; } = 140;
 
-        // NY: Rotation i grader (0, 90, 180, 270)
-        public double Rotation { get; set; } = 0;
-
         public List<Seat> Seats { get; set; } = new();
     }
 }

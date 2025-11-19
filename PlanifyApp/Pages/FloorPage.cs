@@ -293,7 +293,6 @@ namespace Planify.Pages
                 StrokeShape = new RoundRectangle { CornerRadius = 4 },
                 Padding = 4,
                 Content = innerStack,
-                Rotation = t.Rotation
             };
 
             var menuBtn = new Button

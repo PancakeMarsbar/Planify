@@ -85,7 +85,6 @@ namespace Planify.ViewModels
                 Y = 0.1,
                 Width = 260,
                 Height = 140,
-                Rotation = 0
             };
             CurrentFloor.Tables.Add(t);
             Tables.Add(t);
@@ -108,23 +107,6 @@ namespace Planify.ViewModels
             Raise(nameof(Tables));
         }
 
-        // Rotér (±90 eller 180 osv.)
-        public async Task RotateTable(Table t, int degrees)
-        {
-            var newRot = ((int)t.Rotation + degrees) % 360;
-            if (newRot < 0) newRot += 360;
-            t.Rotation = newRot;
-
-            if (Math.Abs(degrees % 180) == 90)
-            {
-                var w = t.Width;
-                t.Width = t.Height;
-                t.Height = w;
-            }
-
-            await _repo.SaveAsync();
-            Raise(nameof(Tables));
-        }
 
         // Duplikér bord med samme størrelse/rotation.
         public async Task<Table> DuplicateTable(Table src)
@@ -138,7 +120,6 @@ namespace Planify.ViewModels
                 Y = Math.Clamp(src.Y + 0.03, 0, 0.97),
                 Width = src.Width,
                 Height = src.Height,
-                Rotation = src.Rotation
             };
 
             CurrentFloor.Tables.Add(t);
