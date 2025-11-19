@@ -15,10 +15,24 @@ namespace Planify.Pages
 {
     public class FloorPage : ContentPage
     {
+        // Fast, låst designstørrelse for floorplan-området
+        private const double DesignWidth = 1400;
+        private const double DesignHeight = 900;
+
         private readonly FloorViewModel _vm;
         private readonly Picker _floorPicker;
-        private readonly AbsoluteLayout _canvas;
+
+        private readonly AbsoluteLayout _canvas;     // u-skaleret (fast 1400x900)
         private readonly Image _background;
+
+        // Zoom-container: ScrollView -> zoomRoot (måles i skaleret størrelse) -> scaleContainer (visuelt Scale=zoom) -> canvas
+        private readonly Grid _zoomRoot;
+        private readonly ContentView _scaleContainer;
+        private readonly ScrollView _scroll;
+
+        private readonly Slider _zoomSlider;
+        private readonly Label _zoomValueLabel;
+        private double _zoom = 1.0;
 
         public FloorPage()
         {
@@ -84,6 +98,17 @@ namespace Planify.Pages
                 RenderFloor();
             };
 
+            // Zoom UI
+            _zoomSlider = new Slider { Minimum = 0.5, Maximum = 2.0, Value = 1.0, WidthRequest = 140 };
+            _zoomValueLabel = new Label { Text = "100%", VerticalTextAlignment = TextAlignment.Center };
+
+            _zoomSlider.ValueChanged += (_, e) =>
+            {
+                _zoom = e.NewValue;
+                _zoomValueLabel.Text = $"{(int)(_zoom * 100)}%";
+                ApplyZoom(); // opdater scroll-kendte størrelse + visuel skalering
+            };
+
             var headerRow = new HorizontalStackLayout
             {
                 Padding = new Thickness(16, 8),
@@ -92,36 +117,60 @@ namespace Planify.Pages
                 {
                     new Label
                     {
-                        Text = "Floorplan (MVP)",
+                        Text = "Floorplan",
                         FontSize = 24,
                         FontAttributes = FontAttributes.Bold
                     },
                     _floorPicker,
                     addFloorBtn,
                     uploadBtn,
-                    addTableBtn
+                    addTableBtn,
+                    new Label { Text = "Zoom:", VerticalTextAlignment = TextAlignment.Center },
+                    _zoomSlider,
+                    _zoomValueLabel
                 }
             };
 
-            // Billedet fylder hele canvas – vi strækker det for at få stabile koordinater
-            _background = new Image { Aspect = Aspect.Fill };
-
+            // Canvas (fast størrelse)
             _canvas = new AbsoluteLayout
             {
-                BackgroundColor = Color.FromArgb("#f5f7fa"),
-                HorizontalOptions = LayoutOptions.Fill,
-                VerticalOptions = LayoutOptions.Fill
+                WidthRequest = DesignWidth,
+                HeightRequest = DesignHeight,
+                BackgroundColor = Color.FromArgb("#f5f7fa")
+            };
+
+            _background = new Image
+            {
+                Aspect = Aspect.Fill
             };
 
             _canvas.Children.Add(_background);
-            AbsoluteLayout.SetLayoutBounds(_background, new Rect(0, 0, 1, 1));
-            AbsoluteLayout.SetLayoutFlags(_background, AbsoluteLayoutFlags.All);
+            AbsoluteLayout.SetLayoutBounds(_background, new Rect(0, 0, DesignWidth, DesignHeight));
+            AbsoluteLayout.SetLayoutFlags(_background, AbsoluteLayoutFlags.None);
 
-            // Re-render når størrelsen ændrer sig
-            _canvas.SizeChanged += (_, __) =>
+            // Skaleringscontainer: vi skalerer visuelt dens indhold
+            _scaleContainer = new ContentView
             {
-                if (_canvas.Width > 0 && _canvas.Height > 0)
-                    RenderFloor();
+                Content = _canvas,
+                AnchorX = 0,
+                AnchorY = 0   // skaler fra øverste-venstre hjørne
+            };
+
+            // Root for zoom: giver ScrollView en korrekt målt størrelse (Design * zoom)
+            _zoomRoot = new Grid
+            {
+                WidthRequest = DesignWidth * _zoom,
+                HeightRequest = DesignHeight * _zoom
+            };
+            _zoomRoot.Children.Add(_scaleContainer);
+
+            // ScrollView med altid-synlige scrollbars
+            _scroll = new ScrollView
+            {
+                Orientation = ScrollOrientation.Both,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Always,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Always,
+                Content = _zoomRoot
             };
 
             var grid = new Grid();
@@ -131,8 +180,8 @@ namespace Planify.Pages
             grid.Children.Add(headerRow);
             Grid.SetRow(headerRow, 0);
 
-            grid.Children.Add(_canvas);
-            Grid.SetRow(_canvas, 1);
+            grid.Children.Add(_scroll);
+            Grid.SetRow(_scroll, 1);
 
             Content = grid;
 
@@ -141,7 +190,18 @@ namespace Planify.Pages
                 await _vm.InitAsync();
                 BuildFloorPickerSelection(_vm.CurrentFloor);
                 RenderFloor();
+                ApplyZoom(); // sikre initial korrekt zoom
             };
+        }
+
+        private void ApplyZoom()
+        {
+            // Visuel skalering
+            _scaleContainer.Scale = _zoom;
+
+            // ScrollView skal kende den SKALEREDE størrelse, ellers virker scrollbars ikke korrekt
+            _zoomRoot.WidthRequest = DesignWidth * _zoom;
+            _zoomRoot.HeightRequest = DesignHeight * _zoom;
         }
 
         private void BuildFloorPickerSelection(FloorPlan? selected)
@@ -155,13 +215,12 @@ namespace Planify.Pages
 
         private void RenderFloor()
         {
-            if (_canvas.Width <= 0 || _canvas.Height <= 0)
-                return;
-
             _canvas.Children.Clear();
+
+            // Læg baggrundsbilledet i fast størrelse
             _canvas.Children.Add(_background);
-            AbsoluteLayout.SetLayoutBounds(_background, new Rect(0, 0, 1, 1));
-            AbsoluteLayout.SetLayoutFlags(_background, AbsoluteLayoutFlags.All);
+            AbsoluteLayout.SetLayoutBounds(_background, new Rect(0, 0, DesignWidth, DesignHeight));
+            AbsoluteLayout.SetLayoutFlags(_background, AbsoluteLayoutFlags.None);
 
             var img = _vm.CurrentImagePath;
             _background.Source = string.IsNullOrWhiteSpace(img)
@@ -170,14 +229,15 @@ namespace Planify.Pages
 
             if (_vm.CurrentFloor == null) return;
 
-            var w = _canvas.Width;
-            var h = _canvas.Height;
+            // Brug altid den låste designstørrelse til mapping
+            var w = DesignWidth;
+            var h = DesignHeight;
 
             foreach (var table in _vm.Tables)
             {
                 var view = CreateTableView(table);
 
-                // X/Y er RELATIVE (0-1) → skaler til canvas
+                // Table.X/Y er RELATIVE (0–1) → map til det faste designareal
                 var x = table.X * w;
                 var y = table.Y * h;
 
@@ -257,26 +317,22 @@ namespace Planify.Pages
                         break;
 
                     case GestureStatus.Running:
-                        var newX = startX + e.TotalX;
-                        var newY = startY + e.TotalY;
-                        AbsoluteLayout.SetLayoutBounds(border,
-                            new Rect(newX, newY, t.Width, t.Height));
+                        // VIGTIGT: deltas divideres med _zoom, fordi view’et er skaleret
+                        var newX = startX + e.TotalX / _zoom;
+                        var newY = startY + e.TotalY / _zoom;
+                        AbsoluteLayout.SetLayoutBounds(border, new Rect(newX, newY, t.Width, t.Height));
                         break;
 
                     case GestureStatus.Completed:
                     case GestureStatus.Canceled:
                         var b2 = AbsoluteLayout.GetLayoutBounds(border);
-                        var w = _canvas.Width;
-                        var h = _canvas.Height;
-                        if (w > 0 && h > 0)
-                        {
-                            // gem som relative koordinater (0-1)
-                            var relX = b2.X / w;
-                            var relY = b2.Y / h;
-                            relX = Math.Clamp(relX, 0, 1);
-                            relY = Math.Clamp(relY, 0, 1);
-                            await _vm.UpdateTablePosition(t, relX, relY);
-                        }
+
+                        // Gem RELATIVE koordinater ift. designstørrelsen (uafhængig af zoom)
+                        var relX = b2.X / DesignWidth;
+                        var relY = b2.Y / DesignHeight;
+                        relX = Math.Clamp(relX, 0, 1);
+                        relY = Math.Clamp(relY, 0, 1);
+                        await _vm.UpdateTablePosition(t, relX, relY);
                         break;
                 }
             };
