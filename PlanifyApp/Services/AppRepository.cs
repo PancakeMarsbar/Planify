@@ -5,8 +5,10 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Planify.Models;
+using Planify.Pages;
 using Planify.Services;
 using System.Diagnostics;
+using System.Windows.Input;
 
 namespace Planify.Services
 {
@@ -111,22 +113,25 @@ namespace Planify.Services
                 Users.Add(user);
         }
 
-        public void UpdateUser(UserAccount user)
+        public void UpdateUser(UserAccount oldUser,UserAccount user)
         {
-            var existing = GetUser(user.Username);
+            // double check if it has not been deleted
+            var existing = GetUser(oldUser.Username);
             if (existing != null)
             {
+                existing.Username = user.Username;
                 existing.IsAdmin = user.IsAdmin;
                 existing.Password = user.Password;
                 existing.Image = user.Image;
             }
         }
 
-        public void RemoveUser (string username)
+        public void RemoveUser(UserAccount user)
         {
-            if (Users.Remove(GetUser(username)))
+            var existing = GetUser(user.Username);
+            if (existing != null)
             {
-                Debug.WriteLine("unable to remove " + username);
+                Users.Remove(existing);
             }
         }
 
@@ -155,10 +160,11 @@ namespace Planify.Services
             return false;
         }
 
-        public void Logout()
+        public async void Logout()
         {
                 CurrentUser = "Not loged in there is an ERROR";
                 IsAdmin = false;
+                Application.Current.MainPage = new LoginPage();
                 return;
         }
 

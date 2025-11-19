@@ -1,13 +1,17 @@
 using CommunityToolkit.Maui.Views;
 using Microsoft.Maui.Controls;
-using Planify.Services;
+using Planify.Models;
 
 
-namespace Planify.Pages;
+namespace Planify.Pages.Popup;
 
-public class CreateUserPopup : Popup
+public class CreateUserPopup : Popup<UserAccount>
 {
-	public CreateUserPopup()
+
+    private readonly Entry nameEntry;
+    private readonly Entry passwordEntry;
+    private readonly CheckBox isAdmin;
+    public CreateUserPopup()
 	{
 		WidthRequest = 230;   // desired width in device-independent units
 		HeightRequest = 250;  // desired height
@@ -15,23 +19,21 @@ public class CreateUserPopup : Popup
 		var password = new Label { Text = "Password" };
 		var admin = new Label { Text = "admin" };
 
-		var nameEntry = new Entry() { Placeholder = "Enter Name" };
-		var passwordEntry = new Entry() { Placeholder = "Password" };
-		var isAdmin = new CheckBox();
+		nameEntry = new Entry() { Placeholder = "Enter Name" };
+		passwordEntry = new Entry() { Placeholder = "Password" };
+		isAdmin = new CheckBox();
 
 		var ConfirmButton = new Button() { Text = "Confirm" };
 		ConfirmButton.Clicked += (s, e) =>
+	{
+		var newUser = new UserAccount
 		{
-			AppRepository.Instance.CreateUser(
-				new Models.UserAccount
-				{
-					Username = nameEntry.Text,
-					Password = passwordEntry.Text,
-					IsAdmin = isAdmin.IsChecked
-				}
-				);
-			CloseAsync();
+			Username = nameEntry.Text,
+			Password = passwordEntry.Text,
+			IsAdmin = isAdmin.IsChecked
 		};
+		CloseAsync(newUser);
+	};
 
 		var CancelButton = new Button() { Text = "Cancel" };
 		CancelButton.Clicked += (s, e) => CloseAsync();
@@ -58,4 +60,6 @@ public class CreateUserPopup : Popup
             Children = { first, second }
         };
     }
+
+
 }

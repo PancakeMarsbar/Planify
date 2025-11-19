@@ -6,10 +6,11 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Planify.Services;
+using Planify.Pages;
 
-namespace Planify.Pages;
+namespace Planify.PlanifyApp.Services;
 
-public class ClaimsView : ContentPage
+public class Claims : ContentPage
 {
 	//------------------------------------------------------------------------------------------------------
 	//UI DECLARATION AND CONSTRUCTION
@@ -20,7 +21,7 @@ public class ClaimsView : ContentPage
 
 	public IEnumerable<string> IdTokensClaims { get; set; } = new[] { "No Claims found in ID Tokens" };
 
-	public ClaimsView()
+	public Claims()
 	{
 
 		Title = "ClaimsView";
@@ -115,7 +116,7 @@ public class ClaimsView : ContentPage
 		IdTokensClaims = new[]
 		{
 			"user; " + AppRepository.Instance.CurrentUser,
-			"role; " + ((AppRepository.Instance.IsAdmin) ? "admin" : "User")
+			"role; " + (AppRepository.Instance.IsAdmin ? "admin" : "User")
 		};
 
 		_claimsList.ItemsSource = IdTokensClaims;
