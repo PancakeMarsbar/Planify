@@ -43,9 +43,9 @@ namespace Planify.ViewModels.V2
 
         private async void UpdateUser(UserAccount User)
         {
-            if (User.Username == AppRepository.Instance.CurrentUser)
+            if (User.Username == AppRepository.Instance.CurrentUser || !AppRepository.Instance.IsAdmin)
             {
-                await Application.Current.MainPage.DisplayAlert("Command Denied", "unable to edit yourself", "OK");
+                await Application.Current.MainPage.DisplayAlert("Command Denied", "unable to edit yourself or lack of permission", "OK");
                 return;
             }
             var result = await Application.Current.MainPage.ShowPopupAsync<UserAccount>(new UpdateUserPopup(User));
@@ -60,9 +60,9 @@ namespace Planify.ViewModels.V2
         private async void DeleteUser(UserAccount User)
         {
            
-            if (User.Username == AppRepository.Instance.CurrentUser)
+            if (User.Username == AppRepository.Instance.CurrentUser || !AppRepository.Instance.IsAdmin)
             {
-                await Application.Current.MainPage.DisplayAlert("Command Denied", "unable to remove yourself", "OK");
+                await Application.Current.MainPage.DisplayAlert("Command Denied", "unable to remove yourself or lack of permission", "OK");
                 return;
             }
 
