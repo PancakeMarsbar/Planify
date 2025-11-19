@@ -19,10 +19,18 @@ namespace Planify.Pages
             var repo = AppRepository.Instance;
             _vm = new V2.BoardViewModel(repo);
 
-            //_vm.Alert = async (title, msg) => await DisplayAlert(title, msg, "OK");
-
             var lanesHost = new HorizontalStackLayout { Spacing = 12, Padding = 12 };
-            Content = new ScrollView { Content = lanesHost };
+
+            // Scrollbars altid synlige (begge retninger)
+            var scroller = new ScrollView
+            {
+                Orientation = ScrollOrientation.Both,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Always,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Always,
+                Content = lanesHost
+            };
+
+            Content = scroller;
 
             Appearing += async (_, __) =>
             {
@@ -88,7 +96,7 @@ namespace Planify.Pages
                             {
                                 await _vm.CreateCard(lane.Id, tag, null, null);
 
-                                // Scroll en smule hen mod kolonnen så brugeren ser kortet
+                                // Scroll lidt hen mod kolonnen så brugeren ser kortet
                                 if (this.Content is ScrollView sv)
                                 {
                                     var index = _vm.Lanes.OrderBy(l => l.Order).ToList().FindIndex(l => l.Id == lane.Id);
@@ -97,7 +105,7 @@ namespace Planify.Pages
                             }
                             else
                             {
-                                await DisplayAlert("Nyt kort", "Value not aceppeted","OK");
+                                await DisplayAlert("Nyt kort", "Value not aceppeted", "OK");
                             }
                             break;
                         }
