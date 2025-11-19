@@ -36,7 +36,7 @@ public class UpdateUserPopup : Popup<UserAccount>
         };
 
         var CancelButton = new Button() { Text = "Cancel" };
-        CancelButton.Clicked += (s, e) => CloseAsync();
+        CancelButton.Clicked += (s, e) => CloseAsync(oldUser);
 
 
         Content = new VerticalStackLayout
