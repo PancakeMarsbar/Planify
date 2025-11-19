@@ -308,35 +308,12 @@ namespace Planify.Pages
             menuBtn.Clicked += async (_, __) =>
             {
                 var choice = await DisplayActionSheet("Bord", "Luk", null,
-                    "Duplikér (samme størrelse)",
-                    "Sæt størrelse (B×H)",
-                    "Rotér +90°",
-                    "Rotér -90°"
+                    "Duplikér (samme størrelse)"
                 );
 
                 if (choice == "Duplikér (samme størrelse)")
                 {
                     await _vm.DuplicateTable(t);
-                    RenderFloor();
-                }
-                else if (choice == "Sæt størrelse (B×H)")
-                {
-                    var wText = await DisplayPromptAsync("Bredde", "px:", initialValue: t.Width.ToString("0"));
-                    var hText = await DisplayPromptAsync("Højde", "px:", initialValue: t.Height.ToString("0"));
-                    if (double.TryParse(wText, out var newW) && double.TryParse(hText, out var newH))
-                    {
-                        await _vm.UpdateTableSize(t, newW, newH);
-                        RenderFloor();
-                    }
-                }
-                else if (choice == "Rotér +90°")
-                {
-                    await _vm.RotateTable(t, +90);
-                    RenderFloor();
-                }
-                else if (choice == "Rotér -90°")
-                {
-                    await _vm.RotateTable(t, -90);
                     RenderFloor();
                 }
             };
