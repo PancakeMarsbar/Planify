@@ -15,17 +15,17 @@ namespace Planify.Pages
 {
     public class FloorPage : ContentPage
     {
-        // Fast, låst designstørrelse for floorplan-området
+        // Fast design-canvas
         private const double DesignWidth = 1400;
         private const double DesignHeight = 900;
 
         private readonly FloorViewModel _vm;
         private readonly Picker _floorPicker;
 
-        private readonly AbsoluteLayout _canvas;     // u-skaleret (fast 1400x900)
+        private readonly AbsoluteLayout _canvas;     // 1400x900
         private readonly Image _background;
 
-        // Zoom-container: ScrollView -> zoomRoot (måles i skaleret størrelse) -> scaleContainer (visuelt Scale=zoom) -> canvas
+        // Zoom container
         private readonly Grid _zoomRoot;
         private readonly ContentView _scaleContainer;
         private readonly ScrollView _scroll;
@@ -106,7 +106,7 @@ namespace Planify.Pages
             {
                 _zoom = e.NewValue;
                 _zoomValueLabel.Text = $"{(int)(_zoom * 100)}%";
-                ApplyZoom(); // opdater scroll-kendte størrelse + visuel skalering
+                ApplyZoom();
             };
 
             var headerRow = new HorizontalStackLayout
@@ -115,12 +115,7 @@ namespace Planify.Pages
                 Spacing = 12,
                 Children =
                 {
-                    new Label
-                    {
-                        Text = "Floorplan",
-                        FontSize = 24,
-                        FontAttributes = FontAttributes.Bold
-                    },
+                    new Label { Text = "Floorplan", FontSize = 24, FontAttributes = FontAttributes.Bold },
                     _floorPicker,
                     addFloorBtn,
                     uploadBtn,
@@ -139,32 +134,27 @@ namespace Planify.Pages
                 BackgroundColor = Color.FromArgb("#f5f7fa")
             };
 
-            _background = new Image
-            {
-                Aspect = Aspect.Fill
-            };
+            _background = new Image { Aspect = Aspect.Fill };
 
             _canvas.Children.Add(_background);
             AbsoluteLayout.SetLayoutBounds(_background, new Rect(0, 0, DesignWidth, DesignHeight));
             AbsoluteLayout.SetLayoutFlags(_background, AbsoluteLayoutFlags.None);
 
-            // Skaleringscontainer: vi skalerer visuelt dens indhold
+            // Skaleringscontainer
             _scaleContainer = new ContentView
             {
                 Content = _canvas,
                 AnchorX = 0,
-                AnchorY = 0   // skaler fra øverste-venstre hjørne
+                AnchorY = 0
             };
 
-            // Root for zoom: giver ScrollView en korrekt målt størrelse (Design * zoom)
             _zoomRoot = new Grid
             {
-                WidthRequest = DesignWidth * _zoom,
-                HeightRequest = DesignHeight * _zoom
+                WidthRequest = DesignWidth,
+                HeightRequest = DesignHeight
             };
             _zoomRoot.Children.Add(_scaleContainer);
 
-            // ScrollView med altid-synlige scrollbars
             _scroll = new ScrollView
             {
                 Orientation = ScrollOrientation.Both,
@@ -190,16 +180,13 @@ namespace Planify.Pages
                 await _vm.InitAsync();
                 BuildFloorPickerSelection(_vm.CurrentFloor);
                 RenderFloor();
-                ApplyZoom(); // sikre initial korrekt zoom
+                ApplyZoom();
             };
         }
 
         private void ApplyZoom()
         {
-            // Visuel skalering
             _scaleContainer.Scale = _zoom;
-
-            // ScrollView skal kende den SKALEREDE størrelse, ellers virker scrollbars ikke korrekt
             _zoomRoot.WidthRequest = DesignWidth * _zoom;
             _zoomRoot.HeightRequest = DesignHeight * _zoom;
         }
@@ -217,19 +204,15 @@ namespace Planify.Pages
         {
             _canvas.Children.Clear();
 
-            // Læg baggrundsbilledet i fast størrelse
             _canvas.Children.Add(_background);
             AbsoluteLayout.SetLayoutBounds(_background, new Rect(0, 0, DesignWidth, DesignHeight));
             AbsoluteLayout.SetLayoutFlags(_background, AbsoluteLayoutFlags.None);
 
             var img = _vm.CurrentImagePath;
-            _background.Source = string.IsNullOrWhiteSpace(img)
-                ? null
-                : ImageSource.FromFile(img);
+            _background.Source = string.IsNullOrWhiteSpace(img) ? null : ImageSource.FromFile(img);
 
             if (_vm.CurrentFloor == null) return;
 
-            // Brug altid den låste designstørrelse til mapping
             var w = DesignWidth;
             var h = DesignHeight;
 
@@ -237,7 +220,6 @@ namespace Planify.Pages
             {
                 var view = CreateTableView(table);
 
-                // Table.X/Y er RELATIVE (0–1) → map til det faste designareal
                 var x = table.X * w;
                 var y = table.Y * h;
 
@@ -249,20 +231,12 @@ namespace Planify.Pages
 
         private View CreateTableView(Table t)
         {
-            var border = new Border
-            {
-                Background = Colors.White,
-                Stroke = Colors.DarkSlateGray,
-                StrokeThickness = 1,
-                StrokeShape = new RoundRectangle { CornerRadius = 4 },
-                Padding = 4
-            };
-
-            var stack = new VerticalStackLayout { Spacing = 2 };
+            // Indholdet af et bord
+            var innerStack = new VerticalStackLayout { Spacing = 2 };
 
             if (t.Seats.Count == 0)
             {
-                stack.Children.Add(new Label
+                innerStack.Children.Add(new Label
                 {
                     Text = $"{t.Id}   Nyt bord",
                     FontSize = 12,
@@ -273,7 +247,7 @@ namespace Planify.Pages
             {
                 foreach (var seat in t.Seats)
                 {
-                    stack.Children.Add(new Label
+                    innerStack.Children.Add(new Label
                     {
                         Text = $"LOCATER {seat.LocaterId}  {seat.Role}",
                         FontSize = 11,
@@ -282,52 +256,102 @@ namespace Planify.Pages
 
                     foreach (var card in _vm.CardsForSeat(seat))
                     {
-                        stack.Children.Add(new Label
+                        innerStack.Children.Add(new Label
                         {
                             Text = $"• {card.AssetTag}  {card.Model}  ({_vm.StatusText(card)})",
                             FontSize = 11
                         });
                     }
 
-                    stack.Children.Add(new BoxView
-                    {
-                        HeightRequest = 1,
-                        BackgroundColor = Colors.LightGray
-                    });
+                    innerStack.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Colors.LightGray });
                 }
-
-                if (stack.Children.Count > 0)
-                    stack.Children.RemoveAt(stack.Children.Count - 1);
+                if (innerStack.Children.Count > 0)
+                    innerStack.Children.RemoveAt(innerStack.Children.Count - 1);
             }
 
-            border.Content = stack;
+            var border = new Border
+            {
+                Background = Colors.White,
+                Stroke = Colors.DarkSlateGray,
+                StrokeThickness = 1,
+                StrokeShape = new RoundRectangle { CornerRadius = 4 },
+                Padding = 4,
+                Content = innerStack,
+                Rotation = t.Rotation
+            };
 
-            double startX = 0;
-            double startY = 0;
+            // Overlay UI: top-right menu + bottom-right resize handle
+            var menuBtn = new Button
+            {
+                Text = "⋮",
+                FontSize = 12,
+                WidthRequest = 22,
+                HeightRequest = 22,
+                Padding = 0,
+                BackgroundColor = Color.FromArgb("#EFEFEF")
+            };
+            menuBtn.Clicked += async (_, __) =>
+            {
+                var choice = await DisplayActionSheet("Bord", "Luk", null,
+                    "Duplikér (samme størrelse)",
+                    "Sæt størrelse (B×H)",
+                    "Rotér +90°",
+                    "Rotér -90°"
+                );
 
-            var pan = new PanGestureRecognizer();
-            pan.PanUpdated += async (s, e) =>
+                if (choice == "Duplikér (samme størrelse)")
+                {
+                    await _vm.DuplicateTable(t);
+                    RenderFloor();
+                }
+                else if (choice == "Sæt størrelse (B×H)")
+                {
+                    var wText = await DisplayPromptAsync("Bredde", "px:", initialValue: t.Width.ToString("0"));
+                    var hText = await DisplayPromptAsync("Højde", "px:", initialValue: t.Height.ToString("0"));
+                    if (double.TryParse(wText, out var newW) && double.TryParse(hText, out var newH))
+                    {
+                        await _vm.UpdateTableSize(t, newW, newH);
+                        RenderFloor();
+                    }
+                }
+                else if (choice == "Rotér +90°")
+                {
+                    await _vm.RotateTable(t, +90);
+                    RenderFloor();
+                }
+                else if (choice == "Rotér -90°")
+                {
+                    await _vm.RotateTable(t, -90);
+                    RenderFloor();
+                }
+            };
+
+            var resizeHandle = new BoxView
+            {
+                WidthRequest = 14,
+                HeightRequest = 14,
+                BackgroundColor = Colors.DimGray,
+                CornerRadius = 2
+            };
+
+            double dragStartX = 0, dragStartY = 0;
+            var tablePan = new PanGestureRecognizer();
+            tablePan.PanUpdated += async (s, e) =>
             {
                 switch (e.StatusType)
                 {
                     case GestureStatus.Started:
-                        var b = AbsoluteLayout.GetLayoutBounds(border);
-                        startX = b.X;
-                        startY = b.Y;
+                        var b = AbsoluteLayout.GetLayoutBounds((View)border.Parent);
+                        dragStartX = b.X; dragStartY = b.Y;
                         break;
-
                     case GestureStatus.Running:
-                        // VIGTIGT: deltas divideres med _zoom, fordi view’et er skaleret
-                        var newX = startX + e.TotalX / _zoom;
-                        var newY = startY + e.TotalY / _zoom;
-                        AbsoluteLayout.SetLayoutBounds(border, new Rect(newX, newY, t.Width, t.Height));
+                        var newX = dragStartX + e.TotalX / _zoom;
+                        var newY = dragStartY + e.TotalY / _zoom;
+                        AbsoluteLayout.SetLayoutBounds((View)border.Parent, new Rect(newX, newY, t.Width, t.Height));
                         break;
-
                     case GestureStatus.Completed:
                     case GestureStatus.Canceled:
-                        var b2 = AbsoluteLayout.GetLayoutBounds(border);
-
-                        // Gem RELATIVE koordinater ift. designstørrelsen (uafhængig af zoom)
+                        var b2 = AbsoluteLayout.GetLayoutBounds((View)border.Parent);
                         var relX = b2.X / DesignWidth;
                         var relY = b2.Y / DesignHeight;
                         relX = Math.Clamp(relX, 0, 1);
@@ -336,9 +360,68 @@ namespace Planify.Pages
                         break;
                 }
             };
-            border.GestureRecognizers.Add(pan);
+            border.GestureRecognizers.Add(tablePan);
 
-            return border;
+            // Resize-pan på håndtaget
+            double startW = 0, startH = 0;
+            var resizePan = new PanGestureRecognizer();
+            resizePan.PanUpdated += async (s, e) =>
+            {
+                switch (e.StatusType)
+                {
+                    case GestureStatus.Started:
+                        startW = t.Width;
+                        startH = t.Height;
+                        break;
+                    case GestureStatus.Running:
+                        var newW = Math.Max(60, startW + e.TotalX / _zoom);
+                        var newH = Math.Max(40, startH + e.TotalY / _zoom);
+                        // preview
+                        var parent = (View)border.Parent;
+                        var bounds = AbsoluteLayout.GetLayoutBounds(parent);
+                        AbsoluteLayout.SetLayoutBounds(parent, new Rect(bounds.X, bounds.Y, newW, newH));
+                        break;
+                    case GestureStatus.Completed:
+                    case GestureStatus.Canceled:
+                        var parent2 = (View)border.Parent;
+                        var bounds2 = AbsoluteLayout.GetLayoutBounds(parent2);
+                        await _vm.UpdateTableSize(t, bounds2.Width, bounds2.Height);
+                        break;
+                }
+            };
+            resizeHandle.GestureRecognizers.Add(resizePan);
+
+            // Sammensæt et view som kan placeres i AbsoluteLayout:
+            // Vi pakker border + overlay controls ind i en Grid, så vi kan ankre knapperne.
+            var container = new Grid
+            {
+                RowDefinitions = { new RowDefinition { Height = GridLength.Star } },
+                ColumnDefinitions = { new ColumnDefinition { Width = GridLength.Star } }
+            };
+
+            container.Children.Add(border);
+
+            // menu-knap øverst-højre
+            var menuHost = new Grid
+            {
+                Padding = new Thickness(0),
+                HorizontalOptions = LayoutOptions.End,
+                VerticalOptions = LayoutOptions.Start
+            };
+            menuHost.Children.Add(menuBtn);
+            container.Children.Add(menuHost);
+
+            // resize-handle nederst-højre
+            var handleHost = new Grid
+            {
+                Padding = new Thickness(0),
+                HorizontalOptions = LayoutOptions.End,
+                VerticalOptions = LayoutOptions.End
+            };
+            handleHost.Children.Add(resizeHandle);
+            container.Children.Add(handleHost);
+
+            return container;
         }
     }
 }

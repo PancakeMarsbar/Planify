@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Planify.Models;
 using Planify.Services;
 
-
 namespace Planify.ViewModels
 {
     public sealed class FloorViewModel : BaseViewModel
@@ -17,9 +16,7 @@ namespace Planify.ViewModels
         public ObservableCollection<Seat> Seats { get; } = new();
 
         public FloorPlan? CurrentFloor { get; private set; }
-        public string CurrentFloorName => CurrentFloor?.Name ?? "";
         public string? CurrentImagePath => CurrentFloor?.ImagePath;
-        public int CurrentLevel => CurrentFloor?.Level ?? 0;
 
         public FloorViewModel(AppRepository repo) => _repo = repo;
 
@@ -28,8 +25,7 @@ namespace Planify.ViewModels
             await _repo.LoadAsync();
 
             Floors.Clear();
-            foreach (var f in _repo.Floors)
-                Floors.Add(f);
+            foreach (var f in _repo.Floors) Floors.Add(f);
 
             CurrentFloor = Floors.FirstOrDefault();
             RebuildFromCurrent();
@@ -39,44 +35,30 @@ namespace Planify.ViewModels
         {
             Tables.Clear();
             Seats.Clear();
-
             if (CurrentFloor != null)
             {
                 foreach (var t in CurrentFloor.Tables)
                 {
                     Tables.Add(t);
-                    foreach (var s in t.Seats)
-                        Seats.Add(s);
+                    foreach (var s in t.Seats) Seats.Add(s);
                 }
             }
-
             Raise(nameof(Tables));
             Raise(nameof(Seats));
             Raise(nameof(CurrentFloor));
-            Raise(nameof(CurrentFloorName));
             Raise(nameof(CurrentImagePath));
-            Raise(nameof(CurrentLevel));
         }
 
         public void SelectFloor(FloorPlan floor)
         {
-            if (floor == null || floor == CurrentFloor)
-                return;
-
+            if (floor == null || floor == CurrentFloor) return;
             CurrentFloor = floor;
             RebuildFromCurrent();
         }
 
         public async Task<FloorPlan> AddFloor(string name)
         {
-            var f = new FloorPlan
-            {
-                Name = name,
-                Company = "Company",
-                Building = "",
-                Level = Floors.Count
-            };
-
+            var f = new FloorPlan { Name = name, Company = "Company", Level = Floors.Count };
             _repo.Floors.Add(f);
             Floors.Add(f);
             CurrentFloor = f;
@@ -88,7 +70,6 @@ namespace Planify.ViewModels
         public async Task SetImageForCurrent(string path)
         {
             if (CurrentFloor == null) return;
-
             CurrentFloor.ImagePath = path;
             await _repo.SaveAsync();
             Raise(nameof(CurrentImagePath));
@@ -96,20 +77,68 @@ namespace Planify.ViewModels
 
         public async Task<Table> AddTable()
         {
-            if (CurrentFloor == null)
-                throw new InvalidOperationException("Ingen etage valgt");
+            if (CurrentFloor == null) throw new InvalidOperationException("Ingen etage valgt");
+            var t = new Table
+            {
+                Id = $"T-{CurrentFloor.Tables.Count + 1:00}",
+                X = 0.1,
+                Y = 0.1,
+                Width = 260,
+                Height = 140,
+                Rotation = 0
+            };
+            CurrentFloor.Tables.Add(t);
+            Tables.Add(t);
+            await _repo.SaveAsync();
+            return t;
+        }
+
+        public async Task UpdateTablePosition(Table t, double relativeX, double relativeY)
+        {
+            t.X = relativeX; t.Y = relativeY;
+            await _repo.SaveAsync();
+        }
+
+        // NY: Opdatér størrelse
+        public async Task UpdateTableSize(Table t, double width, double height)
+        {
+            t.Width = Math.Max(60, width);
+            t.Height = Math.Max(40, height);
+            await _repo.SaveAsync();
+            Raise(nameof(Tables));
+        }
+
+        // NY: Rotér (±90 eller 180 osv.). Ved 90/270 bytter vi bredde/højde for meningsfuld footprint.
+        public async Task RotateTable(Table t, int degrees)
+        {
+            var newRot = ((int)t.Rotation + degrees) % 360;
+            if (newRot < 0) newRot += 360;
+            t.Rotation = newRot;
+
+            if (Math.Abs(degrees % 180) == 90)
+            {
+                var w = t.Width;
+                t.Width = t.Height;
+                t.Height = w;
+            }
+
+            await _repo.SaveAsync();
+            Raise(nameof(Tables));
+        }
+
+        // NY: Duplikér bord med samme størrelse/rotation. Seats kopieres ikke (kan ændres).
+        public async Task<Table> DuplicateTable(Table src)
+        {
+            if (CurrentFloor == null) throw new InvalidOperationException("Ingen etage valgt");
 
             var t = new Table
             {
                 Id = $"T-{CurrentFloor.Tables.Count + 1:00}",
-
-                // RELATIVE positioner (0-1)
-                X = 0.1,
-                Y = 0.1,
-
-                // faste størrelser (kan du justere senere)
-                Width = 260,
-                Height = 140
+                X = Math.Clamp(src.X + 0.03, 0, 0.97),
+                Y = Math.Clamp(src.Y + 0.03, 0, 0.97),
+                Width = src.Width,
+                Height = src.Height,
+                Rotation = src.Rotation
             };
 
             CurrentFloor.Tables.Add(t);
@@ -118,23 +147,8 @@ namespace Planify.ViewModels
             return t;
         }
 
-        // x / y er nu relative koordinater (0-1)
-        public async Task UpdateTablePosition(Table t, double relativeX, double relativeY)
-        {
-            t.X = relativeX;
-            t.Y = relativeY;
-            await _repo.SaveAsync();
-        }
-
         public System.Collections.Generic.IEnumerable<Card> CardsForSeat(Seat s)
             => _repo.CardsAtLocater(s.LocaterId);
-
-        public async Task AssignPerson(Seat s, string personName)
-        {
-            _repo.AssignPersonToLocater(s.LocaterId, personName);
-            await _repo.SaveAsync();
-            Raise(nameof(Seats));
-        }
 
         public string StatusText(Card c) => c.Status switch
         {
