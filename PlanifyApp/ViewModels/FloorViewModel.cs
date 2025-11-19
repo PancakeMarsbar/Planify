@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -99,7 +99,7 @@ namespace Planify.ViewModels
             await _repo.SaveAsync();
         }
 
-        // NY: Opdatér størrelse
+        // OpdatÃ©r stÃ¸rrelse
         public async Task UpdateTableSize(Table t, double width, double height)
         {
             t.Width = Math.Max(60, width);
@@ -108,7 +108,7 @@ namespace Planify.ViewModels
             Raise(nameof(Tables));
         }
 
-        // NY: Rotér (±90 eller 180 osv.). Ved 90/270 bytter vi bredde/højde for meningsfuld footprint.
+        // RotÃ©r (Â±90 eller 180 osv.)
         public async Task RotateTable(Table t, int degrees)
         {
             var newRot = ((int)t.Rotation + degrees) % 360;
@@ -126,7 +126,7 @@ namespace Planify.ViewModels
             Raise(nameof(Tables));
         }
 
-        // NY: Duplikér bord med samme størrelse/rotation. Seats kopieres ikke (kan ændres).
+        // DuplikÃ©r bord med samme stÃ¸rrelse/rotation.
         public async Task<Table> DuplicateTable(Table src)
         {
             if (CurrentFloor == null) throw new InvalidOperationException("Ingen etage valgt");
@@ -157,5 +157,17 @@ namespace Planify.ViewModels
             MachineStatus.InUse => "I brug",
             _ => "Lager"
         };
+
+        // âœ… NY: Fjern kort fra gulvet
+        public async Task RemoveCard(Card card)
+        {
+            if (card == null) return;
+
+            _repo.RemoveCard(card.Id);
+            await _repo.SaveAsync();
+
+            // Genopbyg visningen, sÃ¥ UI opdateres
+            RebuildFromCurrent();
+        }
     }
 }

@@ -15,17 +15,15 @@ namespace Planify.Pages
 {
     public class FloorPage : ContentPage
     {
-        // Fast design-canvas
         private const double DesignWidth = 1400;
         private const double DesignHeight = 900;
 
         private readonly FloorViewModel _vm;
         private readonly Picker _floorPicker;
 
-        private readonly AbsoluteLayout _canvas;     // 1400x900
+        private readonly AbsoluteLayout _canvas;
         private readonly Image _background;
 
-        // Zoom container
         private readonly Grid _zoomRoot;
         private readonly ContentView _scaleContainer;
         private readonly ScrollView _scroll;
@@ -134,13 +132,14 @@ namespace Planify.Pages
                 BackgroundColor = Color.FromArgb("#f5f7fa")
             };
 
-            _background = new Image { Aspect = Aspect.Fill };
+            // ✅ Aspect ratio fix
+            _background = new Image { Aspect = Aspect.AspectFit };
 
             _canvas.Children.Add(_background);
             AbsoluteLayout.SetLayoutBounds(_background, new Rect(0, 0, DesignWidth, DesignHeight));
             AbsoluteLayout.SetLayoutFlags(_background, AbsoluteLayoutFlags.None);
 
-            // Skaleringscontainer
+            // Zoom container
             _scaleContainer = new ContentView
             {
                 Content = _canvas,
@@ -219,7 +218,6 @@ namespace Planify.Pages
             foreach (var table in _vm.Tables)
             {
                 var view = CreateTableView(table);
-
                 var x = table.X * w;
                 var y = table.Y * h;
 
@@ -231,7 +229,6 @@ namespace Planify.Pages
 
         private View CreateTableView(Table t)
         {
-            // Indholdet af et bord
             var innerStack = new VerticalStackLayout { Spacing = 2 };
 
             if (t.Seats.Count == 0)
@@ -254,13 +251,32 @@ namespace Planify.Pages
                         FontAttributes = FontAttributes.Bold
                     });
 
+                    // ✅ Fjern kort via dobbelttryk / dobbeltklik
                     foreach (var card in _vm.CardsForSeat(seat))
                     {
-                        innerStack.Children.Add(new Label
+                        var cardLabel = new Label
                         {
                             Text = $"• {card.AssetTag}  {card.Model}  ({_vm.StatusText(card)})",
                             FontSize = 11
+                        };
+
+                        var doubleTap = new TapGestureRecognizer { NumberOfTapsRequired = 2 };
+                        doubleTap.Command = new Command(async () =>
+                        {
+                            bool confirm = await Shell.Current.DisplayAlert(
+                                "Fjern kort",
+                                $"Vil du fjerne {card.AssetTag}?",
+                                "Ja", "Nej");
+
+                            if (confirm)
+                            {
+                                await _vm.RemoveCard(card);
+                                RenderFloor();
+                            }
                         });
+
+                        cardLabel.GestureRecognizers.Add(doubleTap);
+                        innerStack.Children.Add(cardLabel);
                     }
 
                     innerStack.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Colors.LightGray });
@@ -280,7 +296,6 @@ namespace Planify.Pages
                 Rotation = t.Rotation
             };
 
-            // Overlay UI: top-right menu + bottom-right resize handle
             var menuBtn = new Button
             {
                 Text = "⋮",
@@ -362,7 +377,6 @@ namespace Planify.Pages
             };
             border.GestureRecognizers.Add(tablePan);
 
-            // Resize-pan på håndtaget
             double startW = 0, startH = 0;
             var resizePan = new PanGestureRecognizer();
             resizePan.PanUpdated += async (s, e) =>
@@ -376,7 +390,6 @@ namespace Planify.Pages
                     case GestureStatus.Running:
                         var newW = Math.Max(60, startW + e.TotalX / _zoom);
                         var newH = Math.Max(40, startH + e.TotalY / _zoom);
-                        // preview
                         var parent = (View)border.Parent;
                         var bounds = AbsoluteLayout.GetLayoutBounds(parent);
                         AbsoluteLayout.SetLayoutBounds(parent, new Rect(bounds.X, bounds.Y, newW, newH));
@@ -391,8 +404,6 @@ namespace Planify.Pages
             };
             resizeHandle.GestureRecognizers.Add(resizePan);
 
-            // Sammensæt et view som kan placeres i AbsoluteLayout:
-            // Vi pakker border + overlay controls ind i en Grid, så vi kan ankre knapperne.
             var container = new Grid
             {
                 RowDefinitions = { new RowDefinition { Height = GridLength.Star } },
@@ -401,7 +412,6 @@ namespace Planify.Pages
 
             container.Children.Add(border);
 
-            // menu-knap øverst-højre
             var menuHost = new Grid
             {
                 Padding = new Thickness(0),
@@ -411,7 +421,6 @@ namespace Planify.Pages
             menuHost.Children.Add(menuBtn);
             container.Children.Add(menuHost);
 
-            // resize-handle nederst-højre
             var handleHost = new Grid
             {
                 Padding = new Thickness(0),
