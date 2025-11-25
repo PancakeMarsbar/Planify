@@ -1,11 +1,11 @@
-using Microsoft.Identity.Client;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Graphics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-
+using Microsoft.Identity.Client;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Graphics;
+using Planify.PlanifyApp.Services;
 using Planify.Services;
 
 namespace Planify.Pages;
@@ -112,6 +112,25 @@ public class LoginPage : ContentPage
                 Margin = new Thickness(0, 10, 0, 30)
             };
 
+            var guestLoginLabel = new Label
+            {
+                Text = "Login as guest",
+                TextColor = Colors.Blue,
+                FontSize = 16,
+                HorizontalOptions = LayoutOptions.Center
+            };
+
+            var tapGesture = new TapGestureRecognizer();
+            tapGesture.Tapped += async (s, e) =>
+            {
+                // your guest logic
+                //AppRepository.Instance.LoginAsGuest();
+                //Application.Current.MainPage = new Claims();
+                Application.Current.MainPage = new FloorPageGuest();
+            };
+
+            guestLoginLabel.GestureRecognizers.Add(tapGesture);
+
             Content = new ScrollView
             {
                 Content = new VerticalStackLayout
@@ -126,7 +145,8 @@ public class LoginPage : ContentPage
                         header2,
                         username,
                         password,
-                        _signInButton
+                        _signInButton,
+                        guestLoginLabel
                     }
                 }
             };

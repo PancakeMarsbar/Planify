@@ -154,6 +154,7 @@ namespace Planify.Services
             {
                 CurrentUser = user.Username;
                 IsAdmin = user.IsAdmin;
+                IsLogedIn = true;
                 return true;
             }
 
@@ -162,10 +163,11 @@ namespace Planify.Services
 
         public async void Logout()
         {
-                CurrentUser = "Not loged in there is an ERROR";
-                IsAdmin = false;
-                Application.Current.MainPage = new LoginPage();
-                return;
+            CurrentUser = "Not loged in there is an ERROR";
+            IsAdmin = false;
+            IsLogedIn = false;
+            Application.Current.MainPage = new LoginPage();
+            return;
         }
 
 
