@@ -39,7 +39,6 @@ namespace Planify.Pages
             var repo = AppRepository.Instance;
             _vm = new FloorViewModel(repo);
 
-            // --- topbar ---
             _floorPicker = new Picker { Title = "Vælg etage", WidthRequest = 200 };
             _floorPicker.ItemDisplayBinding = new Binding(nameof(FloorPlan.Name));
             _floorPicker.SelectedIndexChanged += (_, __) =>
@@ -96,7 +95,6 @@ namespace Planify.Pages
                 RenderFloor();
             };
 
-            // Zoom UI
             _zoomSlider = new Slider { Minimum = 0.5, Maximum = 2.0, Value = 1.0, WidthRequest = 140 };
             _zoomValueLabel = new Label { Text = "100%", VerticalTextAlignment = TextAlignment.Center };
 
@@ -124,7 +122,6 @@ namespace Planify.Pages
                 }
             };
 
-            // Canvas (fast størrelse)
             _canvas = new AbsoluteLayout
             {
                 WidthRequest = DesignWidth,
@@ -132,14 +129,12 @@ namespace Planify.Pages
                 BackgroundColor = Color.FromArgb("#f5f7fa")
             };
 
-            // ✅ Aspect ratio fix
             _background = new Image { Aspect = Aspect.AspectFit };
 
             _canvas.Children.Add(_background);
             AbsoluteLayout.SetLayoutBounds(_background, new Rect(0, 0, DesignWidth, DesignHeight));
             AbsoluteLayout.SetLayoutFlags(_background, AbsoluteLayoutFlags.None);
 
-            // Zoom container
             _scaleContainer = new ContentView
             {
                 Content = _canvas,
@@ -251,7 +246,6 @@ namespace Planify.Pages
                         FontAttributes = FontAttributes.Bold
                     });
 
-                    // ✅ Fjern kort via dobbelttryk / dobbeltklik
                     foreach (var card in _vm.CardsForSeat(seat))
                     {
                         var cardLabel = new Label
@@ -281,6 +275,7 @@ namespace Planify.Pages
 
                     innerStack.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Colors.LightGray });
                 }
+
                 if (innerStack.Children.Count > 0)
                     innerStack.Children.RemoveAt(innerStack.Children.Count - 1);
             }
@@ -295,6 +290,9 @@ namespace Planify.Pages
                 Content = innerStack,
             };
 
+            // --------------------------------------------------
+            // MENU FOR BORD — nu med SLET
+            // --------------------------------------------------
             var menuBtn = new Button
             {
                 Text = "⋮",
@@ -304,10 +302,12 @@ namespace Planify.Pages
                 Padding = 0,
                 BackgroundColor = Color.FromArgb("#EFEFEF")
             };
+
             menuBtn.Clicked += async (_, __) =>
             {
                 var choice = await DisplayActionSheet("Bord", "Luk", null,
-                    "Duplikér (samme størrelse)"
+                    "Duplikér (samme størrelse)",
+                    "Slet bord"
                 );
 
                 if (choice == "Duplikér (samme størrelse)")
@@ -315,7 +315,21 @@ namespace Planify.Pages
                     await _vm.DuplicateTable(t);
                     RenderFloor();
                 }
+                else if (choice == "Slet bord")
+                {
+                    bool ok = await DisplayAlert("Slet bord", $"Vil du slette {t.Id}?", "Ja", "Nej");
+                    if (ok)
+                    {
+                        await _vm.RemoveTable(t);
+                        RenderFloor();
+                        return;
+                    }
+                }
             };
+
+            // --------------------------------------------------
+            // Resize handle
+            // --------------------------------------------------
 
             var resizeHandle = new BoxView
             {
@@ -335,11 +349,13 @@ namespace Planify.Pages
                         var b = AbsoluteLayout.GetLayoutBounds((View)border.Parent);
                         dragStartX = b.X; dragStartY = b.Y;
                         break;
+
                     case GestureStatus.Running:
                         var newX = dragStartX + e.TotalX / _zoom;
                         var newY = dragStartY + e.TotalY / _zoom;
                         AbsoluteLayout.SetLayoutBounds((View)border.Parent, new Rect(newX, newY, t.Width, t.Height));
                         break;
+
                     case GestureStatus.Completed:
                     case GestureStatus.Canceled:
                         var b2 = AbsoluteLayout.GetLayoutBounds((View)border.Parent);
@@ -363,6 +379,7 @@ namespace Planify.Pages
                         startW = t.Width;
                         startH = t.Height;
                         break;
+
                     case GestureStatus.Running:
                         var newW = Math.Max(60, startW + e.TotalX / _zoom);
                         var newH = Math.Max(40, startH + e.TotalY / _zoom);
@@ -370,6 +387,7 @@ namespace Planify.Pages
                         var bounds = AbsoluteLayout.GetLayoutBounds(parent);
                         AbsoluteLayout.SetLayoutBounds(parent, new Rect(bounds.X, bounds.Y, newW, newH));
                         break;
+
                     case GestureStatus.Completed:
                     case GestureStatus.Canceled:
                         var parent2 = (View)border.Parent;
