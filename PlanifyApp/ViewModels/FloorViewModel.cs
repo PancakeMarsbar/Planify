@@ -35,6 +35,7 @@ namespace Planify.ViewModels
         {
             Tables.Clear();
             Seats.Clear();
+
             if (CurrentFloor != null)
             {
                 foreach (var t in CurrentFloor.Tables)
@@ -43,6 +44,7 @@ namespace Planify.ViewModels
                     foreach (var s in t.Seats) Seats.Add(s);
                 }
             }
+
             Raise(nameof(Tables));
             Raise(nameof(Seats));
             Raise(nameof(CurrentFloor));
@@ -78,6 +80,7 @@ namespace Planify.ViewModels
         public async Task<Table> AddTable()
         {
             if (CurrentFloor == null) throw new InvalidOperationException("Ingen etage valgt");
+
             var t = new Table
             {
                 Id = $"T-{CurrentFloor.Tables.Count + 1:00}",
@@ -86,6 +89,7 @@ namespace Planify.ViewModels
                 Width = 260,
                 Height = 140,
             };
+
             CurrentFloor.Tables.Add(t);
             Tables.Add(t);
             await _repo.SaveAsync();
@@ -94,11 +98,11 @@ namespace Planify.ViewModels
 
         public async Task UpdateTablePosition(Table t, double relativeX, double relativeY)
         {
-            t.X = relativeX; t.Y = relativeY;
+            t.X = relativeX;
+            t.Y = relativeY;
             await _repo.SaveAsync();
         }
 
-        // Opdatér størrelse
         public async Task UpdateTableSize(Table t, double width, double height)
         {
             t.Width = Math.Max(60, width);
@@ -107,8 +111,6 @@ namespace Planify.ViewModels
             Raise(nameof(Tables));
         }
 
-
-        // Duplikér bord med samme størrelse/rotation.
         public async Task<Table> DuplicateTable(Table src)
         {
             if (CurrentFloor == null) throw new InvalidOperationException("Ingen etage valgt");
@@ -119,7 +121,7 @@ namespace Planify.ViewModels
                 X = Math.Clamp(src.X + 0.03, 0, 0.97),
                 Y = Math.Clamp(src.Y + 0.03, 0, 0.97),
                 Width = src.Width,
-                Height = src.Height,
+                Height = src.Height
             };
 
             CurrentFloor.Tables.Add(t);
@@ -139,15 +141,27 @@ namespace Planify.ViewModels
             _ => "Lager"
         };
 
-        // ✅ NY: Fjern kort fra gulvet
+        // ---------------------------------------------------------
+        //  SLET BORD
+        // ---------------------------------------------------------
+        public async Task RemoveTable(Table t)
+        {
+            if (CurrentFloor == null || t == null) return;
+
+            CurrentFloor.Tables.Remove(t);
+            Tables.Remove(t);
+
+            await _repo.SaveAsync();
+            RebuildFromCurrent();
+        }
+
+        // Kort (cards) fjernes ved dobbeltklik
         public async Task RemoveCard(Card card)
         {
             if (card == null) return;
 
             _repo.RemoveCard(card.Id);
             await _repo.SaveAsync();
-
-            // Genopbyg visningen, så UI opdateres
             RebuildFromCurrent();
         }
     }
