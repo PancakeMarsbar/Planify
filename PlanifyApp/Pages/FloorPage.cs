@@ -82,7 +82,7 @@ namespace Planify.Pages
                 using (var dst = File.Open(dest, FileMode.Create, FileAccess.Write))
                 {
                     await src.CopyToAsync(dst);
-                }
+                } QuadraticBezierSegment q;
 
                 await _vm.SetImageForCurrent(dest);
                 RenderFloor();

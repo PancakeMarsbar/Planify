@@ -51,6 +51,13 @@ namespace Planify.Pages
                 }
             };
 
+            var BackBtn = new Button { Text = "Back" };
+            BackBtn.Clicked += async (_, __) =>
+            {
+                Application.Current.MainPage = new LoginPage();
+            };
+
+
             // Zoom UI
             _zoomSlider = new Slider { Minimum = 0.5, Maximum = 2.0, Value = 1.0, WidthRequest = 140 };
             _zoomValueLabel = new Label { Text = "100%", VerticalTextAlignment = TextAlignment.Center };
@@ -70,6 +77,7 @@ namespace Planify.Pages
                 {
                     new Label { Text = "Floorplan", FontSize = 24, FontAttributes = FontAttributes.Bold },
                     _floorPicker,
+                    BackBtn,
                     new Label { Text = "Zoom:", VerticalTextAlignment = TextAlignment.Center },
                     _zoomSlider,
                     _zoomValueLabel
