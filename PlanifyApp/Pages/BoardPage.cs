@@ -21,7 +21,6 @@ namespace Planify.Pages
 
             var lanesHost = new HorizontalStackLayout { Spacing = 12, Padding = 12 };
 
-            // Scrollbars altid synlige
             var scroller = new ScrollView
             {
                 Orientation = ScrollOrientation.Both,
@@ -72,7 +71,6 @@ namespace Planify.Pages
             }
         }
 
-        // === Kolonne-menu (tilføj/omdøb/fjern kolonner + tilføj kort) ===
         private View LaneMenuButton(BoardLane lane)
         {
             var btn = new Button { Text = "⋯", WidthRequest = 28, HeightRequest = 28, Padding = 0, FontSize = 14 };
@@ -96,7 +94,6 @@ namespace Planify.Pages
                             {
                                 await _vm.CreateCard(lane.Id, tag, null, null);
 
-                                // Scroll lidt hen mod kolonnen så brugeren ser kortet
                                 if (this.Content is ScrollView sv)
                                 {
                                     var index = _vm.Lanes.OrderBy(l => l.Order).ToList().FindIndex(l => l.Id == lane.Id);
@@ -105,7 +102,7 @@ namespace Planify.Pages
                             }
                             else
                             {
-                                await DisplayAlert("Nyt kort", "Value not aceppeted", "OK");
+                                await DisplayAlert("Nyt kort", "Value not accepted", "OK");
                             }
                             break;
                         }
@@ -157,7 +154,6 @@ namespace Planify.Pages
                 }
             };
 
-            // ← Venstre pil
             var leftBtn = new Button { Text = "←", WidthRequest = 36, HeightRequest = 36, Padding = 0 };
             leftBtn.Clicked += async (_, __) =>
             {
@@ -167,20 +163,40 @@ namespace Planify.Pages
                 if (idx > 0) await _vm.Move(c, lanes[idx - 1].Id);
             };
 
-            // Indhold
+            var smallStyle = (Style)Application.Current!.Resources["Small"];
+
             var asset = new Label { FontAttributes = FontAttributes.Bold };
             asset.SetBinding(Label.TextProperty, nameof(Card.AssetTag));
-            var model = new Label { Style = (Style)Application.Current!.Resources["Small"] };
-            model.SetBinding(Label.TextProperty, nameof(Card.Model));
-            var loc = new Label { Style = (Style)Application.Current!.Resources["Small"] };
-            loc.SetBinding(Label.TextProperty, nameof(Card.LocaterId));
-            var status = new Label { Style = (Style)Application.Current!.Resources["Small"] };
-            status.SetBinding(Label.TextProperty, nameof(Card.Status));
-            var deadline = new Label { Style = (Style)Application.Current!.Resources["Small"] };
-            deadline.SetBinding(Label.TextProperty, new Binding(nameof(Card.SetupDeadline), stringFormat: "Deadline: {0:yyyy-MM-dd}"));
-            var content = new VerticalStackLayout { Spacing = 2, Children = { asset, model, loc, status, deadline } };
 
-            // Højre side: badge + → + Flyt + ⋯
+            var model = new Label { Style = smallStyle };
+            model.SetBinding(Label.TextProperty, nameof(Card.Model));
+
+            var person = new Label { Style = smallStyle };
+            person.SetBinding(Label.TextProperty, nameof(Card.PersonName));
+
+            var loc = new Label { Style = smallStyle };
+            loc.SetBinding(Label.TextProperty, nameof(Card.LocaterId));
+
+            var status = new Label { Style = smallStyle };
+            status.SetBinding(Label.TextProperty, nameof(Card.Status));
+
+            var deadline = new Label { Style = smallStyle };
+            deadline.SetBinding(Label.TextProperty, new Binding(nameof(Card.SetupDeadline), stringFormat: "Deadline: {0:yyyy-MM-dd}"));
+
+            var content = new VerticalStackLayout
+            {
+                Spacing = 2,
+                Children =
+                {
+                    asset,
+                    model,
+                    person,
+                    loc,
+                    status,
+                    deadline
+                }
+            };
+
             var badge = new BoxView { WidthRequest = 8, HeightRequest = 8, CornerRadius = 4, VerticalOptions = LayoutOptions.Center };
             badge.SetBinding(BoxView.ColorProperty, new MultiBinding
             {
@@ -188,7 +204,6 @@ namespace Planify.Pages
                 Converter = new DeadlineToColor()
             });
 
-            // → Højre pil
             var rightBtn = new Button { Text = "→", WidthRequest = 36, HeightRequest = 36, Padding = 0 };
             rightBtn.Clicked += async (_, __) =>
             {
@@ -198,7 +213,6 @@ namespace Planify.Pages
                 if (idx < lanes.Count - 1) await _vm.Move(c, lanes[idx + 1].Id);
             };
 
-            // NY: Flyt-knap (egen action sheet til flytning)
             var moveBtn = new Button { Text = "Flyt", HeightRequest = 36, Padding = new Thickness(10, 0) };
             moveBtn.Clicked += async (_, __) =>
             {
@@ -214,7 +228,6 @@ namespace Planify.Pages
                 if (dest != null) await _vm.Move(c, dest.Id);
             };
 
-            // ⋯ Redigeringsmenu (kun redigér/slet – IKKE flyt)
             var menuBtn = new Button { Text = "⋯", WidthRequest = 36, HeightRequest = 36, Padding = 0, FontSize = 18 };
             menuBtn.Clicked += async (_, __) =>
             {
@@ -222,28 +235,47 @@ namespace Planify.Pages
 
                 var action = await DisplayActionSheet("Kort", "Luk", null,
                     "Redigér Navn (AssetTag)", "Redigér Model", "Redigér Serienr.",
-                    "Redigér Person", "Redigér LOCATER-ID", "Redigér Deadline", "Slet kort");
+                    "Redigér Person", "Redigér LOCATER-ID", "Fjern LOCATER", "Redigér Deadline", "Slet kort");
 
                 if (action == "Redigér Navn (AssetTag)")
-                    await _vm.EditCardField(c, "AssetTag", await DisplayPromptAsync("Navn", "AssetTag:", initialValue: c.AssetTag));
+                {
+                    var v = await DisplayPromptAsync("Navn", "AssetTag:", initialValue: c.AssetTag);
+                    await _vm.EditCardField(c, "AssetTag", v);
+                }
                 else if (action == "Redigér Model")
-                    await _vm.EditCardField(c, "Model", await DisplayPromptAsync("Model", "Model:", initialValue: c.Model));
+                {
+                    var v = await DisplayPromptAsync("Model", "Model:", initialValue: c.Model);
+                    await _vm.EditCardField(c, "Model", v);
+                }
                 else if (action == "Redigér Serienr.")
-                    await _vm.EditCardField(c, "Serial", await DisplayPromptAsync("Serienr.", "Serienr.:", initialValue: c.Serial));
+                {
+                    var v = await DisplayPromptAsync("Serienr.", "Serienr.:", initialValue: c.Serial);
+                    await _vm.EditCardField(c, "Serial", v);
+                }
                 else if (action == "Redigér Person")
-                    await _vm.EditCardField(c, "PersonName", await DisplayPromptAsync("Person", "Navn:", initialValue: c.PersonName));
+                {
+                    var v = await DisplayPromptAsync("Person", "Navn:", initialValue: c.PersonName);
+                    await _vm.EditCardField(c, "PersonName", v);
+                }
                 else if (action == "Redigér LOCATER-ID")
-                    await _vm.EditCardField(c, "LocaterId", await DisplayPromptAsync("LOCATER-ID", "Fx 0.3.5:", initialValue: c.LocaterId));
+                {
+                    await _vm.PickTableForCard(c);
+                }
+                else if (action == "Fjern LOCATER")
+                {
+                    await _vm.ClearLocaterForCard(c);
+                }
                 else if (action == "Redigér Deadline")
-                    await _vm.EditCardField(c, "Deadline", await DisplayPromptAsync("Deadline", "YYYY-MM-DD:", initialValue: c.SetupDeadline?.ToString("yyyy-MM-dd")));
+                {
+                    var v = await DisplayPromptAsync("Deadline", "YYYY-MM-DD:", initialValue: c.SetupDeadline?.ToString("yyyy-MM-dd"));
+                    await _vm.EditCardField(c, "Deadline", v);
+                }
                 else if (action == "Slet kort")
                 {
                     var ok = await DisplayActionSheet("Slet dette kort?", "Annuller", null, "Ja, slet");
                     if (ok == "Ja, slet")
                         await _vm.DeleteCard(c);
                 }
-
-                // VIGTIGT: Ingen auto-"Flyt til ..." her længere
             };
 
             var right = new HorizontalStackLayout { Spacing = 6, Children = { badge, rightBtn, moveBtn, menuBtn } };
@@ -267,7 +299,6 @@ namespace Planify.Pages
         }
     }
 
-    // Badge converter
     public sealed class DeadlineToColor : IMultiValueConverter
     {
         public object Convert(object[]? values, System.Type targetType, object? parameter, System.Globalization.CultureInfo? culture)

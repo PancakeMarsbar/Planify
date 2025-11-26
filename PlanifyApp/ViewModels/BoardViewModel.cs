@@ -1,14 +1,14 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Maui.Controls;
 using Planify.Models;
 using Planify.Services;
 
 namespace Planify.ViewModels.V2
 {
-    /// <summary>
-    /// BoardViewModel v2 med dynamiske kolonner (lanes) og uden auto-refresh timer.
-    /// </summary>
     public sealed class BoardViewModel
     {
         private readonly AppRepository _repo;
@@ -26,24 +26,17 @@ namespace Planify.ViewModels.V2
             Rebuild();
         }
 
-        // I denne version er der ingen timer, så Teardown behøver ikke gøre noget
         public void Teardown()
         {
-            // placeholder til senere hvis du vil have auto-refresh tilbage
+            // ikke brugt pt.
         }
 
-        /// <summary>
-        /// Genopbygger lanes og kort-lister uden at skifte ObservableCollection-objekterne,
-        /// så CollectionView stadig ser opdateringerne.
-        /// </summary>
         private void Rebuild()
         {
-            // --- lanes ---
             Lanes.Clear();
             foreach (var l in _repo.Lanes.OrderBy(l => l.Order))
                 Lanes.Add(l);
 
-            // --- cards pr. lane ---
             var existingLaneIds = CardsByLane.Keys.ToList();
 
             foreach (var lane in Lanes)
@@ -59,7 +52,6 @@ namespace Planify.ViewModels.V2
                     oc.Add(card);
             }
 
-            // fjern lanes der ikke findes længere
             foreach (var id in existingLaneIds.Except(Lanes.Select(l => l.Id)).ToList())
                 CardsByLane.Remove(id);
         }
@@ -111,12 +103,10 @@ namespace Planify.ViewModels.V2
             await _repo.SaveAsync();
 
             lane.Title = newTitle;
-            // ingen PropertyChanged her, men CollectionView bruger bare Title ved næste redraw
         }
 
         public async Task RemoveLane(BoardLane lane)
         {
-            // flyt kort til første anden lane
             var fallback = _repo.Lanes.OrderBy(l => l.Order).First(l => l.Id != lane.Id).Id;
             _repo.RemoveLane(lane.Id, fallback);
             await _repo.SaveAsync();
@@ -128,17 +118,132 @@ namespace Planify.ViewModels.V2
         {
             switch (field)
             {
-                case "AssetTag": c.AssetTag = value ?? ""; break;
-                case "Model": c.Model = value ?? ""; break;
-                case "Serial": c.Serial = value ?? ""; break;
-                case "PersonName": c.PersonName = value ?? ""; break;
-                case "LocaterId": c.LocaterId = value ?? ""; break;
+                case "AssetTag":
+                    c.AssetTag = value ?? "";
+                    break;
+
+                case "Model":
+                    c.Model = value ?? "";
+                    break;
+
+                case "Serial":
+                    c.Serial = value ?? "";
+                    break;
+
+                case "PersonName":
+                    {
+                        var newName = value ?? "";
+                        c.PersonName = newName;
+
+                        // Hvis kortet er knyttet til et LOCATER (Table.Id),
+                        // så skal ALLE kort + selve bordet have samme navn.
+                        if (!string.IsNullOrWhiteSpace(c.LocaterId))
+                        {
+                            var locId = c.LocaterId;
+
+                            // 1) Opdatér alle kort på samme LOCATER-ID
+                            foreach (var other in _repo.Cards.Where(x =>
+                                         string.Equals(x.LocaterId, locId, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                other.PersonName = newName;
+                            }
+
+                            // 2) Opdatér alle borde (Tables) med samme Id
+                            foreach (var floor in _repo.Floors)
+                            {
+                                foreach (var table in floor.Tables.Where(t =>
+                                             string.Equals(t.Id, locId, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    table.Name = newName;
+                                }
+                            }
+                        }
+                        break;
+                    }
+
+                case "LocaterId":
+                    c.LocaterId = value ?? "";
+                    break;
+
                 case "Deadline":
                     c.SetupDeadline = DateTime.TryParse(value, out var dt) ? dt : null;
                     break;
             }
 
             await _repo.SaveAsync();
+
+            // Tving refresh af lane-listen for det kort
+            var col = CollectionFor(c.LaneId);
+            if (col.Contains(c))
+            {
+                col.Remove(c);
+                col.Add(c);
+            }
+        }
+
+        // ----------- LOCATER: bind til Table -----------
+        public async Task PickTableForCard(Card c)
+        {
+            // Saml alle borde fra alle etager
+            var tables = _repo.Floors
+                .SelectMany(f => f.Tables)
+                .ToList();
+
+            if (tables.Count == 0)
+            {
+                await Application.Current.MainPage.DisplayAlert(
+                    "Ingen borde",
+                    "Der er ingen borde oprettet på floorplan.",
+                    "OK");
+                return;
+            }
+
+            // Vis: "T-01   Klipperum"
+            var options = tables
+                .Select(t => $"{t.Id}   {t.Name}")
+                .ToList();
+
+            var choice = await Application.Current.MainPage.DisplayActionSheet(
+                "Vælg bord (LOCATER-ID)",
+                "Luk", null,
+                options.ToArray()
+            );
+
+            if (string.IsNullOrWhiteSpace(choice)) return;
+
+            var index = options.IndexOf(choice);
+            if (index < 0 || index >= tables.Count) return;
+
+            var selectedTable = tables[index];
+
+            // LOCATER = Table.Id, person = Table.Name
+            c.LocaterId = selectedTable.Id;
+            c.PersonName = selectedTable.Name;
+
+            await _repo.SaveAsync();
+
+            var col = CollectionFor(c.LaneId);
+            if (col.Contains(c))
+            {
+                col.Remove(c);
+                col.Add(c);
+            }
+        }
+
+        // ----------- LOCATER: ryd igen -----------
+        public async Task ClearLocaterForCard(Card c)
+        {
+            c.LocaterId = "";
+            c.PersonName = "";
+
+            await _repo.SaveAsync();
+
+            var col = CollectionFor(c.LaneId);
+            if (col.Contains(c))
+            {
+                col.Remove(c);
+                col.Add(c);
+            }
         }
 
         // ----------- Card create/delete -----------

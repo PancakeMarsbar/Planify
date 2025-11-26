@@ -84,6 +84,7 @@ namespace Planify.ViewModels
             var t = new Table
             {
                 Id = $"T-{CurrentFloor.Tables.Count + 1:00}",
+                Name = "Nyt bord",
                 X = 0.1,
                 Y = 0.1,
                 Width = 260,
@@ -118,6 +119,7 @@ namespace Planify.ViewModels
             var t = new Table
             {
                 Id = $"T-{CurrentFloor.Tables.Count + 1:00}",
+                Name = src.Name + " (kopi)",
                 X = Math.Clamp(src.X + 0.03, 0, 0.97),
                 Y = Math.Clamp(src.Y + 0.03, 0, 0.97),
                 Width = src.Width,
@@ -128,6 +130,27 @@ namespace Planify.ViewModels
             Tables.Add(t);
             await _repo.SaveAsync();
             return t;
+        }
+
+        public async Task RenameTable(Table t, string newName)
+        {
+            if (t == null || CurrentFloor == null) return;
+
+            t.Name = newName;
+
+            await _repo.SaveAsync();
+            RebuildFromCurrent();
+        }
+
+        public async Task RemoveTable(Table t)
+        {
+            if (CurrentFloor == null || t == null) return;
+
+            CurrentFloor.Tables.Remove(t);
+            Tables.Remove(t);
+
+            await _repo.SaveAsync();
+            RebuildFromCurrent();
         }
 
         public System.Collections.Generic.IEnumerable<Card> CardsForSeat(Seat s)
@@ -141,30 +164,6 @@ namespace Planify.ViewModels
             _ => "Lager"
         };
 
-        // ---------------------------------------------------------
-        //  SLET BORD
-        // ---------------------------------------------------------
-        public async Task RemoveTable(Table t)
-        {
-            if (CurrentFloor == null || t == null) return;
-
-            CurrentFloor.Tables.Remove(t);
-            Tables.Remove(t);
-
-            await _repo.SaveAsync();
-            RebuildFromCurrent();
-        }
-        public async Task RenameTable(Table t, string newName)
-        {
-            if (t == null || CurrentFloor == null) return;
-
-            t.Name = newName;
-
-            await _repo.SaveAsync();
-            RebuildFromCurrent();
-        }
-
-        // Kort (cards) fjernes ved dobbeltklik
         public async Task RemoveCard(Card card)
         {
             if (card == null) return;

@@ -5,8 +5,11 @@ namespace Planify.Models
     public class Table
     {
         public string Id { get; set; } = "";
+
+        // Brugervenligt navn
+        public string Name { get; set; } = "Nyt bord";
+
         // RELATIVE position (0..1)
-        public string Name { get; set; } = "nyt board";
         public double X { get; set; }
         public double Y { get; set; }
 
