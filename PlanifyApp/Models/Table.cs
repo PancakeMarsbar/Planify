@@ -6,6 +6,7 @@ namespace Planify.Models
     {
         public string Id { get; set; } = "";
         // RELATIVE position (0..1)
+        public string Name { get; set; } = "nyt board";
         public double X { get; set; }
         public double Y { get; set; }
 

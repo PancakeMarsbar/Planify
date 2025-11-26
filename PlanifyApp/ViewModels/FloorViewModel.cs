@@ -154,6 +154,15 @@ namespace Planify.ViewModels
             await _repo.SaveAsync();
             RebuildFromCurrent();
         }
+        public async Task RenameTable(Table t, string newName)
+        {
+            if (t == null || CurrentFloor == null) return;
+
+            t.Name = newName;
+
+            await _repo.SaveAsync();
+            RebuildFromCurrent();
+        }
 
         // Kort (cards) fjernes ved dobbeltklik
         public async Task RemoveCard(Card card)

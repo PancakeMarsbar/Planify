@@ -230,7 +230,7 @@ namespace Planify.Pages
             {
                 innerStack.Children.Add(new Label
                 {
-                    Text = $"{t.Id}   Nyt bord",
+                    Text = $"{t.Id}   {t.Name}",
                     FontSize = 12,
                     FontAttributes = FontAttributes.Bold
                 });
@@ -307,6 +307,7 @@ namespace Planify.Pages
             {
                 var choice = await DisplayActionSheet("Bord", "Luk", null,
                     "Duplikér (samme størrelse)",
+                    "Omdøb bord",
                     "Slet bord"
                 );
 
@@ -314,6 +315,18 @@ namespace Planify.Pages
                 {
                     await _vm.DuplicateTable(t);
                     RenderFloor();
+                    return;
+                }
+                else if (choice == "Omdøb bord")
+                {
+                    string newName = await DisplayPromptAsync("Omdøb bord", "Nyt bordnavn:", initialValue: t.Name);
+
+                    if (!string.IsNullOrWhiteSpace(newName))
+                    {
+                        await _vm.RenameTable(t, newName);
+                        RenderFloor();
+                    }
+                    return;
                 }
                 else if (choice == "Slet bord")
                 {
@@ -322,10 +335,10 @@ namespace Planify.Pages
                     {
                         await _vm.RemoveTable(t);
                         RenderFloor();
-                        return;
                     }
                 }
             };
+
 
             // --------------------------------------------------
             // Resize handle
