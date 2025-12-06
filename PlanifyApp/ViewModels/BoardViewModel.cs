@@ -130,13 +130,13 @@ namespace Planify.ViewModels.V2
 
                         // Hvis kortet er knyttet til et LOCATER (Table.Id),
                         // så skal ALLE kort + selve bordet have samme navn.
-                        if (!string.IsNullOrWhiteSpace(c.TableId))
+                        if (!string.IsNullOrWhiteSpace(c.LocaterId))
                         {
-                            var locId = c.TableId;
+                            var locId = c.LocaterId;
 
                             // 1) Opdatér alle kort på samme LOCATER-ID
                             foreach (var other in _repo.Cards.Where(x =>
-                                         string.Equals(x.TableId, locId, StringComparison.OrdinalIgnoreCase)))
+                                         string.Equals(x.LocaterId, locId, StringComparison.OrdinalIgnoreCase)))
                             {
                                 other.PersonName = newName;
                             }
@@ -155,7 +155,7 @@ namespace Planify.ViewModels.V2
                     }
 
                 case "LocaterId":
-                    c.TableId = value ?? "";
+                    c.LocaterId = value ?? "";
                     break;
 
                 case "Deadline":
@@ -210,7 +210,7 @@ namespace Planify.ViewModels.V2
             var selectedTable = tables[index];
 
             // LOCATER = Table.Id, person = Table.Name
-            c.TableId = selectedTable.Id;
+            c.LocaterId = selectedTable.Id;
             c.PersonName = selectedTable.Name;
 
             await _repo.SaveAsync();
@@ -226,7 +226,7 @@ namespace Planify.ViewModels.V2
         // ----------- LOCATER: ryd igen -----------
         public async Task ClearLocaterForCard(Card c)
         {
-            c.TableId = "";
+            c.LocaterId = "";
             c.PersonName = "";
 
             await _repo.SaveAsync();

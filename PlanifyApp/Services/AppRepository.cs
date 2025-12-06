@@ -228,7 +228,7 @@ namespace Planify.Services
 
         // ---------- Helper / regler ----------
         public IEnumerable<Card> CardsAtLocater(string loc)
-            => Cards.Where(c => string.Equals(c.TableId, loc, StringComparison.OrdinalIgnoreCase));
+            => Cards.Where(c => string.Equals(c.LocaterId, loc, StringComparison.OrdinalIgnoreCase));
 
         public bool LocaterExistsOnLevel(int level, string locaterId)
         {
@@ -258,7 +258,7 @@ namespace Planify.Services
             {
                 new Card{
                     LaneId = lane("SetupQueue"),
-                    TableId = "0.3.5",
+                    LocaterId = "0.3.5",
                     AssetTag = "IMAC-001",
                     Serial = "S-001",
                     Model = "iMac 24",
@@ -267,7 +267,7 @@ namespace Planify.Services
                 },
                 new Card{
                     LaneId = lane("David"),
-                    TableId = "0.3.5",
+                    LocaterId = "0.3.5",
                     AssetTag = "LAP-101",
                     Serial = "S-101",
                     Model = "MBP 14",
@@ -276,7 +276,7 @@ namespace Planify.Services
                 },
                 new Card{
                     LaneId = lane("I brug"),
-                    TableId = "0.2.1",
+                    LocaterId = "0.2.1",
                     AssetTag = "IMAC-002",
                     Serial = "S-002",
                     Model = "iMac 27",
@@ -286,7 +286,7 @@ namespace Planify.Services
                 },
                 new Card{
                     LaneId = lane("Lager"),
-                    TableId = "",
+                    LocaterId = "",
                     AssetTag = "IMAC-050",
                     Serial = "S-050",
                     Model = "iMac 24",

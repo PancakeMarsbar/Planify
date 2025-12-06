@@ -174,7 +174,7 @@ namespace Planify.Pages
             person.SetBinding(Label.TextProperty, nameof(Card.PersonName));
 
             var loc = new Label { Style = smallStyle };
-            loc.SetBinding(Label.TextProperty, nameof(Card.TableId));
+            loc.SetBinding(Label.TextProperty, nameof(Card.LocaterId));
 
             var status = new Label { Style = smallStyle };
             status.SetBinding(Label.TextProperty, nameof(Card.Status));
