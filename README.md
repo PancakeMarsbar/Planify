@@ -1,118 +1,120 @@
 ﻿# Planify
+
+Planify er en .NET MAUI applikation designet til at håndtere maskiner (assets), siddepladser (floorplans) og opgaver via et Kanban-lignende board. Den nyeste version introducerer et loginsystem, brugerstyring med roller (Admin/User/Guest) og lokal datapersistens.
+
+## Vigtige ændringer i denne version
+* **Login System:** Appen starter nu på `LoginPage`, hvor brugere kan logge ind eller fortsætte som gæst.
+* **Brugerstyring:** Administratorer har adgang til en ny `AccountsPage`, hvor de kan se, oprette, redigere og slette brugere.
+* **Rollebaseret Adgang:**
+    * **Admin:** Fuld adgang, inklusiv en "Settings" fane og brugeradministration.
+    * **User:** Adgang til Board og Floors med redigeringsrettigheder.
+    * **Guest:** Begrænset "read-only" adgang til en forenklet Floor-oversigt.
+* **Popups:** Integreret `CommunityToolkit.Maui` til at håndtere dialogbokse for oprettelse og redigering af brugere.
+
+---
+
 # Rod-filer
 
 ## App.cs
-Opretter app’en, definerer simple styles og bruger `CreateWindow(...)` til at sætte `AppShell` som roden (ny, anbefalet MAUI-måde).
+Initialiserer appen og ressourcer. Bestemmer startvinduet baseret på login-status (typisk `LoginPage`, men understøtter auto-login logik).
 
 ## AppShell.cs
-Topnavigation med faner: **Board**, **Floors**, **Settings**.  
-Hver fane loader sin side via C# (ingen XAML).
+Hovednavigationen efter login.
+* Opsætter **FlyoutHeader** med profilbillede, brugernavn og logud-knap.
+* Definerer fanerne: **Board**, **Floors**, **Accounts**.
+* **Dynamisk indhold:** "Settings"-fanen vises kun, hvis den loggede bruger er **Admin**.
+* Indeholder sikkerhedslogik (`OnNavigating`) for at forhindre uautoriseret adgang til admin-sider.
 
 ## MauiProgram.cs
-Bootstrapping: registrerer `App`, sætter fonte (**OpenSans**), og aktiverer debug-logging.
+Bootstrapping af applikationen:
+* Registrerer `App` og fonts (OpenSans).
+* Initialiserer `MauiCommunityToolkit`.
 
 ---
 
 # PlanifyApp/Models
 
-## Enums.cs
-Alle status-typer: board-kolonner, maskinestatus, seatstatus.  
-Holder forretningslogik konsekvent.
-
-## Tags.cs
-Standardiserede tags (**Wipe**, **Remote**, **Ekstra skærm**, **Klippeprog version**) + plads til brugerdefinerede.  
-Bruges på `Card`.
+## UserAccount.cs
+Model for brugere indeholdende `Username`, `Password`, `IsAdmin` status og `Image`.
 
 ## Card.cs
-“Maskine-kortet”.  
-Felter:  
-- LOCATER-ID  
-- Personnavn (fri tekst)  
-- Stilling  
-- iMac/PC nr  
-- Serienr.  
-- Model  
-- Setup-deadline  
-- Status  
-- Noter  
-- Tags  
-- Kolonne & assignee  
+Repræsenterer et kort på boardet (f.eks. en maskine). Indeholder data som `AssetTag`, `Model`, `PersonName`, `LocaterId`, `Status` og `SetupDeadline`. Indeholder logik (`DeadlineRed`, `DeadlineYellow`) til visuel markering af deadlines.
 
-Afledte felter: `DeadlineRed` / `DeadlineYellow` til rød/gul labels.
+## FloorPlans.cs
+Definerer en etage (`FloorPlan`) med egenskaber som navn, billede-sti og en liste af borde (`Tables`).
 
-## Floor.cs
-En etage (firma, bygning, level).  
-Har referencer til `Tables` (områder på tegningen).
+## Table.cs & Seat.cs
+Definerer de fysiske områder på floorplanen. `Table` indeholder dimensioner og position, mens `Seat` repræsenterer en specifik plads med et `LocaterId`.
 
-## Table.cs
-Et område på planen med koordinater/størrelse og en liste af `Seats`.
-
-## Seat.cs
-En fysisk plads.  
-Indeholder position (pixels), LOCATER-ID (etage.rum.plads), evt. rolle/label.  
-Flere maskiner kan være på samme seat – de vises via opslag i repo.
+## Enums.cs & Tags.cs
+Definerer standardiserede status-typer (`SeatStatus`, `MachineStatus`) og tags til brug i applikationen.
 
 ---
 
 # PlanifyApp/Services
 
-## JsonStore.cs
-Simpel gem/indlæs som JSON under `AppData/Planify`.  
-Bruger MAUI’s `FileSystem.AppDataDirectory`.
+## AppRepository.cs
+Singleton service der fungerer som det centrale data-lag.
+* Håndterer lister af **Users**, **Cards**, **Floors** og **Lanes**.
+* Styrer logik for **Login/Logout** og holder styr på den nuværende bruger og admin-rettigheder.
+* Gemmer og loader data asynkront via `JsonStore`.
+* Opretter seed-data (f.eks. en admin-bruger og test-kort) hvis ingen data findes.
 
-## FileMutex.cs
-Enkel fil-lås (mutex på tværs af processer), så samtidige brugere ikke skriver samtidig.
+## PasswordHasher.cs
+Hjælpeklasse til hashing og verifikation af passwords ved hjælp af PBKDF2.
+
+## JsonStore.cs & FileMutex.cs
+Håndterer læsning og skrivning af JSON-filer i appens lokale data-mappe, sikret med en `FileMutex` for at undgå samtidighedsproblemer.
 
 ## AuditLog.cs
-Append-logger ændringer (hvem/hvad/hvornår) til `audit.log`.  
-Bruges fra repository.
-
-## AppRepository.cs
-Hjertet af data.  
-Holder `Cards` og `Floors`, loader/saver JSON via `JsonStore`, og gemmer seed første gang.  
-
-  
-
-Hjælper-metoder:  
-`CardsAtLocater(...)` samt seed-data (et par cards + en dummy-floor med 2 seats).
+Logger brugerhandlinger (hvem, hvad, hvornår) til en lokal tekstfil.
 
 ---
 
 # PlanifyApp/ViewModels
 
-## BaseViewModel.cs
-Standard `INotifyPropertyChanged` base til databinding.
-
-## BoardViewModel.cs
-Serverer kolonnerne (`ObservableCollections`).  
-`InitAsync()` loader data og starter auto-refresh hver 5. sek.  
-`Move(...)` flytter kort mellem kolonner med regler (fx check før *I brug*).  
-Har en `Alert`-callback så UI kan vise dialog uden deprecated API.
+## AccountViewModel.cs
+Styrer logikken bag `AccountsPage`.
+* Loader og viser listen af brugere.
+* Håndterer kommandoer for at oprette, opdatere og slette brugere, inklusiv validering (f.eks. kan man ikke slette sig selv).
 
 ## FloorViewModel.cs
-Loader `CurrentFloor`, eksponerer `Seats` og metoder til at finde maskiner for en plads og tildele person (sætter *To-Wipe* efter din regel).
+Håndterer logik for visning og manipulation af floorplans.
+* Styrer zoom-niveauer og valg af etage.
+* Indeholder metoder til at tilføje/flytte borde og tildele kort til pladser.
+
+## BoardViewModel.cs (V2)
+Styrer Kanban-boardet.
+* Organiserer kort i kolonner (`Lanes`).
+* Håndterer flytning af kort mellem kolonner og synkroniserer ændringer med `AppRepository`.
 
 ---
 
 # PlanifyApp/Pages
 
-## MainPage.cs
-Enkel velkomstside (forklarer fanerne).  
-Kan fjernes, men god til test.
+## LoginPage.cs
+Appens indgangsside.
+* Indtastning af brugernavn og adgangskode.
+* Mulighed for "Login as guest", som sender brugeren videre til `FloorPageGuest`.
+
+## AccountsPage.cs
+Administrationsside hvor admins kan se en oversigt over brugere præsenteret som kort i et `FlexLayout`. Giver adgang til at redigere eller slette brugere via popups.
 
 ## BoardPage.cs
-Trello-lignende tavle i ren C#: fem kolonner (*Setup Queue → David → Done → I brug → Lager*).  
-Hver “card” vises i en `Border` (med stroke).  
-Rød/gul deadline markeres både med badge og lys baggrund.  
-Pil-knap → flytter kortet til næste kolonne og bruger VM’s regler.
+Viser opgaver i kolonner. Understøtter flytning af kort (via pile-knapper eller menu) og redigering af kort-detaljer via context-menuer.
 
 ## FloorPage.cs
-Viser en dummy-floormap (`Grid`) med en `AbsoluteLayout`-layer.  
-Hver seat rendres i en `Border` (stroke+baggrund) med LOCATER-ID, rolle, liste over maskiner på pladsen (splittet visning).  
-Tryk på en seat → prompt for personnavn → VM sætter *To-Wipe* på relevante maskiner (advarsel-men-tillad).
+Den fulde floorplan-editor for autoriserede brugere.
+* Muliggør tilføjelse og flytning af borde via drag-and-drop gestures.
+* Viser detaljeret information om hvem der sidder hvor.
 
-## SettingsPage.cs
-Placeholder til ADMIN/USER, CSV-eksport, kolonner/tags-konfig – så du ved hvor det kommer ind.
+## FloorPageGuest.cs
+En begrænset version af floorplan-siden til gæster.
+* Tillader visning og zoom af plantegningen, men ingen redigering.
+* Indeholder en "Back" knap til login-siden.
+
+## Pages/Popup/
+Indeholder `CreateUserPopup.cs` og `UpdateUserPopup.cs`, som bruger `CommunityToolkit.Maui.Views` til at vise modale vinduer for brugerinput.
 
 ---
 
