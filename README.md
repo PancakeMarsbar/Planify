@@ -6,7 +6,7 @@ Planify er en .NET MAUI applikation designet til at håndtere maskiner (assets),
 * **Login System:** Appen starter nu på `LoginPage`, hvor brugere kan logge ind eller fortsætte som gæst.
 * **Brugerstyring:** Administratorer har adgang til en ny `AccountsPage`, hvor de kan se, oprette, redigere og slette brugere.
 * **Rollebaseret Adgang:**
-    * **Admin:** Fuld adgang, inklusiv en "Settings" fane og brugeradministration.
+    * **Admin:** Fuld adgang, inklusiv en `AccountsPage` fane og brugeradministration.
     * **User:** Adgang til Board og Floors med redigeringsrettigheder.
     * **Guest:** Begrænset "read-only" adgang til en forenklet Floor-oversigt.
 * **Popups:** Integreret `CommunityToolkit.Maui` til at håndtere dialogbokse for oprettelse og redigering af brugere.
@@ -22,7 +22,7 @@ Initialiserer appen og ressourcer. Bestemmer startvinduet baseret på login-stat
 Hovednavigationen efter login.
 * Opsætter **FlyoutHeader** med profilbillede, brugernavn og logud-knap.
 * Definerer fanerne: **Board**, **Floors**, **Accounts**.
-* **Dynamisk indhold:** "Settings"-fanen vises kun, hvis den loggede bruger er **Admin**.
+* **Dynamisk indhold:** `AccountsPage`-fanen vises kun, hvis den loggede bruger er **Admin**.
 * Indeholder sikkerhedslogik (`OnNavigating`) for at forhindre uautoriseret adgang til admin-sider.
 
 ## MauiProgram.cs

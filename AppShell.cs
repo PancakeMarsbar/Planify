@@ -21,12 +21,11 @@ namespace Planify
             tabBar.Items.Add(new ShellContent { Title = "Board", Route = "BoardPage", ContentTemplate = new DataTemplate(() => new BoardPage()) });
             tabBar.Items.Add(new ShellContent { Title = "Floors", Route = "FloorPage", ContentTemplate = new DataTemplate(() => new FloorPage()) });
             //tabBar.Items.Add(new ShellContent { Title = "ClaimsView", Route = "ClaimsView", ContentTemplate = new DataTemplate(() => new Claims()) });
-            tabBar.Items.Add(new ShellContent { Title = "Accounts", Route = "AccountPage", ContentTemplate = new DataTemplate(() => new AccountsPage()) });
-
+            
             // Admin-only items
             if (repo.IsAdmin)
             {
-                tabBar.Items.Add(new ShellContent { Title = "Settings", Route = "SettingsPage", ContentTemplate = new DataTemplate(() => new SettingsPage()) });
+                tabBar.Items.Add(new ShellContent { Title = "Accounts", Route = "AccountPage", ContentTemplate = new DataTemplate(() => new AccountsPage()) });
             }
 
             Items.Add(tabBar);
@@ -92,12 +91,11 @@ namespace Planify
             Items.Add(new FlyoutItem { Title = "Board", Route = "BoardPage", Items = { new ShellContent { ContentTemplate = new DataTemplate(() => new BoardPage() )} } });
             Items.Add(new FlyoutItem { Title = "Floors", Route = "FloorPage", Items = { new ShellContent { ContentTemplate = new DataTemplate(() => new FloorPage() )} } });
             //Items.Add(new FlyoutItem { Title = "ClaimsView", Route = "ClaimsView", Items = { new ShellContent { ContentTemplate = new DataTemplate(() => new Claims() )} } });
-            Items.Add(new FlyoutItem { Title = "Accounts", Route = "AccountPage", Items = { new ShellContent { ContentTemplate = new DataTemplate(() => new AccountsPage() )} } });
-
+            
             // Admin-only items
             if (repo.IsAdmin)
             {
-                Items.Add(new FlyoutItem { Title = "Settings", Route = "SettingsPage", Items = { new ShellContent { ContentTemplate = new DataTemplate(() => new SettingsPage() )} } });
+                Items.Add(new FlyoutItem { Title = "Accounts", Route = "AccountPage", Items = { new ShellContent { ContentTemplate = new DataTemplate(() => new AccountsPage()) } } });
             }
 
 
@@ -108,10 +106,11 @@ namespace Planify
             base.OnNavigating(args);
                 
             // Block access if somehow navigating manually to admin page
-            if (!AppRepository.Instance.IsAdmin && args.Target.Location.OriginalString.Contains("SettingsPage"))
+            if (!AppRepository.Instance.IsAdmin && args.Target.Location.OriginalString.Contains("AccountPage"))
             {
                 args.Cancel();
                 await Application.Current.MainPage.DisplayAlert("Access Denied", "Admin only page", "OK");
+                await Shell.Current.GoToAsync("//SettingsPage");
             }
         }
     }
