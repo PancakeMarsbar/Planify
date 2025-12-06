@@ -71,10 +71,7 @@ Bruges fra repository.
 Hjertet af data.  
 Holder `Cards` og `Floors`, loader/saver JSON via `JsonStore`, og gemmer seed første gang.  
 
-Forretningsregler:
-- `LocaterExistsOnLevel(...)`: validerer tal.tal.tal og at den findes på etagen.  
-- `CanMoveToInUse(...)`: krav før et kort må til *I brug*: LOCATER-ID eksisterer, iMac/PC nr, serienr., status ≠ *ToWipe*, deadline sat.  
-- `AssignPersonToLocater(...)`: advarsel-men-tillad → sætter maskiner til *To-Wipe* hvis ikke *Ready*.  
+  
 
 Hjælper-metoder:  
 `CardsAtLocater(...)` samt seed-data (et par cards + en dummy-floor med 2 seats).
