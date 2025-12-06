@@ -12,7 +12,6 @@ namespace Planify.ViewModels.V2
     public sealed class BoardViewModel
     {
         private readonly AppRepository _repo;
-        private System.Timers.Timer? _timer;
         private bool _refreshing;
 
         public ObservableCollection<BoardLane> Lanes { get; } = new();
@@ -25,12 +24,6 @@ namespace Planify.ViewModels.V2
             await _repo.LoadAsync();
             Rebuild();
         }
-
-        public void Teardown()
-        {
-            // ikke brugt pt.
-        }
-
         private void Rebuild()
         {
             Lanes.Clear();
@@ -137,13 +130,13 @@ namespace Planify.ViewModels.V2
 
                         // Hvis kortet er knyttet til et LOCATER (Table.Id),
                         // så skal ALLE kort + selve bordet have samme navn.
-                        if (!string.IsNullOrWhiteSpace(c.LocaterId))
+                        if (!string.IsNullOrWhiteSpace(c.TableId))
                         {
-                            var locId = c.LocaterId;
+                            var locId = c.TableId;
 
                             // 1) Opdatér alle kort på samme LOCATER-ID
                             foreach (var other in _repo.Cards.Where(x =>
-                                         string.Equals(x.LocaterId, locId, StringComparison.OrdinalIgnoreCase)))
+                                         string.Equals(x.TableId, locId, StringComparison.OrdinalIgnoreCase)))
                             {
                                 other.PersonName = newName;
                             }
@@ -162,7 +155,7 @@ namespace Planify.ViewModels.V2
                     }
 
                 case "LocaterId":
-                    c.LocaterId = value ?? "";
+                    c.TableId = value ?? "";
                     break;
 
                 case "Deadline":
@@ -217,7 +210,7 @@ namespace Planify.ViewModels.V2
             var selectedTable = tables[index];
 
             // LOCATER = Table.Id, person = Table.Name
-            c.LocaterId = selectedTable.Id;
+            c.TableId = selectedTable.Id;
             c.PersonName = selectedTable.Name;
 
             await _repo.SaveAsync();
@@ -233,7 +226,7 @@ namespace Planify.ViewModels.V2
         // ----------- LOCATER: ryd igen -----------
         public async Task ClearLocaterForCard(Card c)
         {
-            c.LocaterId = "";
+            c.TableId = "";
             c.PersonName = "";
 
             await _repo.SaveAsync();

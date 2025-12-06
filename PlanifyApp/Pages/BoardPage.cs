@@ -36,7 +36,6 @@ namespace Planify.Pages
                 await _vm.InitAsync();
                 BuildColumns(lanesHost);
             };
-            Disappearing += (_, __) => _vm.Teardown();
         }
 
         private void BuildColumns(HorizontalStackLayout host)
@@ -175,7 +174,7 @@ namespace Planify.Pages
             person.SetBinding(Label.TextProperty, nameof(Card.PersonName));
 
             var loc = new Label { Style = smallStyle };
-            loc.SetBinding(Label.TextProperty, nameof(Card.LocaterId));
+            loc.SetBinding(Label.TextProperty, nameof(Card.TableId));
 
             var status = new Label { Style = smallStyle };
             status.SetBinding(Label.TextProperty, nameof(Card.Status));

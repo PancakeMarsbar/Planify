@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
@@ -229,7 +228,7 @@ namespace Planify.Services
 
         // ---------- Helper / regler ----------
         public IEnumerable<Card> CardsAtLocater(string loc)
-            => Cards.Where(c => string.Equals(c.LocaterId, loc, StringComparison.OrdinalIgnoreCase));
+            => Cards.Where(c => string.Equals(c.TableId, loc, StringComparison.OrdinalIgnoreCase));
 
         public bool LocaterExistsOnLevel(int level, string locaterId)
         {
@@ -241,59 +240,6 @@ namespace Planify.Services
                                            .Any(s => s.LocaterId == locaterId));
         }
 
-        public bool CanMoveToInUse(Card c, int level, out string? reason)
-        {
-            if (string.IsNullOrWhiteSpace(c.LocaterId))
-            {
-                reason = "LOCATER-ID mangler";
-                return false;
-            }
-
-            if (!LocaterExistsOnLevel(level, c.LocaterId))
-            {
-                reason = "LOCATER-ID findes ikke på etagen";
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(c.AssetTag))
-            {
-                reason = "iMac/PC nr mangler";
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(c.Serial))
-            {
-                reason = "Serienr. mangler";
-                return false;
-            }
-
-            if (c.Status == MachineStatus.ToWipe)
-            {
-                reason = "Maskine skal wipes";
-                return false;
-            }
-
-            if (!c.SetupDeadline.HasValue)
-            {
-                reason = "Setup-deadline mangler";
-                return false;
-            }
-
-            reason = null;
-            return true;
-        }
-
-        public void AssignPersonToLocater(string loc, string person)
-        {
-            foreach (var card in CardsAtLocater(loc))
-            {
-                if (card.Status != MachineStatus.Ready)
-                    card.Status = MachineStatus.ToWipe;
-            }
-
-            Log("AssignPerson", $"{person} -> {loc}");
-        }
-
         // ---------- Seed ----------
         private static List<BoardLane> SeedLanes() => new()
         {
@@ -303,7 +249,7 @@ namespace Planify.Services
             new BoardLane{ Title="I brug",     Order=3 },
             new BoardLane{ Title="Lager",      Order=4 },
         };
-
+        
         private static List<Card> SeedCards(List<BoardLane> lanes)
         {
             string lane(string title) => lanes.First(l => l.Title == title).Id;
@@ -312,7 +258,7 @@ namespace Planify.Services
             {
                 new Card{
                     LaneId = lane("SetupQueue"),
-                    LocaterId = "0.3.5",
+                    TableId = "0.3.5",
                     AssetTag = "IMAC-001",
                     Serial = "S-001",
                     Model = "iMac 24",
@@ -321,7 +267,7 @@ namespace Planify.Services
                 },
                 new Card{
                     LaneId = lane("David"),
-                    LocaterId = "0.3.5",
+                    TableId = "0.3.5",
                     AssetTag = "LAP-101",
                     Serial = "S-101",
                     Model = "MBP 14",
@@ -330,7 +276,7 @@ namespace Planify.Services
                 },
                 new Card{
                     LaneId = lane("I brug"),
-                    LocaterId = "0.2.1",
+                    TableId = "0.2.1",
                     AssetTag = "IMAC-002",
                     Serial = "S-002",
                     Model = "iMac 27",
@@ -340,7 +286,7 @@ namespace Planify.Services
                 },
                 new Card{
                     LaneId = lane("Lager"),
-                    LocaterId = "",
+                    TableId = "",
                     AssetTag = "IMAC-050",
                     Serial = "S-050",
                     Model = "iMac 24",
