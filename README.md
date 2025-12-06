@@ -61,7 +61,7 @@ Singleton service der fungerer som det centrale data-lag.
 * Opretter seed-data (f.eks. en admin-bruger og test-kort) hvis ingen data findes.
 
 ## PasswordHasher.cs
-Hjælpeklasse til hashing og verifikation af passwords ved hjælp af PBKDF2.
+Hjælpeklasse til hashing og verifikation af passwords ved hjælp af PBKDF2. (not implemented)
 
 ## JsonStore.cs & FileMutex.cs
 Håndterer læsning og skrivning af JSON-filer i appens lokale data-mappe, sikret med en `FileMutex` for at undgå samtidighedsproblemer.
