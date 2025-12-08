@@ -230,15 +230,6 @@ namespace Planify.Services
         public IEnumerable<Card> CardsAtLocater(string loc)
             => Cards.Where(c => string.Equals(c.LocaterId, loc, StringComparison.OrdinalIgnoreCase));
 
-        public bool LocaterExistsOnLevel(int level, string locaterId)
-        {
-            if (!Regex.IsMatch(locaterId, @"^\d+\.\d+\.\d+$"))
-                return false;
-
-            return Floors.Any(f => f.Level == level &&
-                                   f.Tables.SelectMany(t => t.Seats)
-                                           .Any(s => s.LocaterId == locaterId));
-        }
 
         // ---------- Seed ----------
         private static List<BoardLane> SeedLanes() => new()
@@ -317,23 +308,6 @@ namespace Planify.Services
                 Height = 160
             };
 
-            t.Seats.Add(new Seat
-            {
-                Id = "S-01",
-                X = 60,
-                Y = 80,
-                LocaterId = "0.3.5",
-                Role = "Cutter"
-            });
-
-            t.Seats.Add(new Seat
-            {
-                Id = "S-02",
-                X = 220,
-                Y = 80,
-                LocaterId = "0.2.1",
-                Role = "Producer"
-            });
 
             f.Tables.Add(t);
             return new List<FloorPlan> { f };

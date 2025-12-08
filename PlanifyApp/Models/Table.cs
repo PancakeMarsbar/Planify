@@ -16,7 +16,5 @@ namespace Planify.Models
         // Størrelse i pixels på design-canvas
         public double Width { get; set; } = 260;
         public double Height { get; set; } = 140;
-
-        public List<Seat> Seats { get; set; } = new();
     }
 }

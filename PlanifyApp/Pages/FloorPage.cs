@@ -227,59 +227,14 @@ namespace Planify.Pages
         {
             var innerStack = new VerticalStackLayout { Spacing = 2 };
 
-            if (t.Seats.Count == 0)
-            {
+            
                 innerStack.Children.Add(new Label
                 {
                     Text = $"{t.Id}   {t.Name}",
                     FontSize = 12,
                     FontAttributes = FontAttributes.Bold
                 });
-            }
-            else
-            {
-                foreach (var seat in t.Seats)
-                {
-                    innerStack.Children.Add(new Label
-                    {
-                        Text = $"LOCATER {seat.LocaterId}  {seat.Role}",
-                        FontSize = 11,
-                        FontAttributes = FontAttributes.Bold
-                    });
-
-                    foreach (var card in _vm.CardsForSeat(seat))
-                    {
-                        var cardLabel = new Label
-                        {
-                            Text = $"• {card.AssetTag}  {card.Model}  ({_vm.StatusText(card)})",
-                            FontSize = 11
-                        };
-
-                        var doubleTap = new TapGestureRecognizer { NumberOfTapsRequired = 2 };
-                        doubleTap.Command = new Command(async () =>
-                        {
-                            bool confirm = await Shell.Current.DisplayAlert(
-                                "Fjern kort",
-                                $"Vil du fjerne {card.AssetTag}?",
-                                "Ja", "Nej");
-
-                            if (confirm)
-                            {
-                                await _vm.RemoveCard(card);
-                                RenderFloor();
-                            }
-                        });
-
-                        cardLabel.GestureRecognizers.Add(doubleTap);
-                        innerStack.Children.Add(cardLabel);
-                    }
-
-                    innerStack.Children.Add(new BoxView { HeightRequest = 1, BackgroundColor = Colors.LightGray });
-                }
-
-                if (innerStack.Children.Count > 0)
-                    innerStack.Children.RemoveAt(innerStack.Children.Count - 1);
-            }
+            
 
             var border = new Border
             {

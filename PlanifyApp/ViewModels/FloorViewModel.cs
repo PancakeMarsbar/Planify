@@ -41,7 +41,6 @@ namespace Planify.ViewModels
                 foreach (var t in CurrentFloor.Tables)
                 {
                     Tables.Add(t);
-                    foreach (var s in t.Seats) Seats.Add(s);
                 }
             }
 
